@@ -1,0 +1,18 @@
+{
+  "name": "Elks Score",
+  "short_name": "Elks Score",
+  "description": "Live Edmonton Elks & CFL score tracker",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#14452F",
+  "theme_color": "#14452F",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

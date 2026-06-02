@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Elks Score</title>
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#14452F">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Elks Score">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:  #14452F;
+      --green2: #1B5E3F;
+      --gold:   #F2A900;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--green);
+      min-height: 100vh;
+      padding: 16px 16px 40px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #app { max-width: 440px; margin: 0 auto; }
+
+    /* ── Header ── */
+    .header { text-align: center; padding: 20px 0 18px; }
+    .logo-img { width: 68px; height: 68px; object-fit: contain; }
+    .header h1 { color: #fff; font-size: 20px; font-weight: 700; margin-top: 8px; }
+    .header .date { color: rgba(255,255,255,.55); font-size: 13px; margin-top: 3px; }
+
+    /* ── Cards ── */
+    .card { background: #fff; border-radius: 16px; overflow: hidden; margin-bottom: 12px; box-shadow: 0 2px 16px rgba(0,0,0,.22); }
+    .sec { padding: 14px 16px; }
+    .sec + .sec { border-top: 1px solid #f2f2f2; }
+    .sec-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #b0b0b0; margin-bottom: 10px; }
+
+    /* ── Badges ── */
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+    .b-live    { background: #ff3b30; color: #fff; }
+    .b-final   { background: #e8e8ed; color: #555; }
+    .b-preview { background: var(--green2); color: #fff; }
+    .b-off     { background: #e8e8ed; color: #666; }
+
+    /* ── Score row ── */
+    .score-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .score-row { display: flex; align-items: center; justify-content: space-between; }
+    .team-col { flex: 1; text-align: center; }
+    .team-abbr { font-size: 12px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 2px; display: flex; align-items: center; justify-content: center; gap: 5px; }
+    .poss-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); display: inline-block; }
+    .score-num { font-size: 50px; font-weight: 800; color: #1c1c1e; line-height: 1; }
+    .score-num.dim { color: #ccc; }
+    .score-num.hi  { color: var(--green); }
+    .score-dash { font-size: 30px; color: #ddd; font-weight: 300; padding: 0 6px; flex-shrink: 0; }
+    .score-vs   { font-size: 16px; color: #ccc; padding: 0 12px; flex-shrink: 0; }
+    .team-record { font-size: 11px; color: #c0c0c0; margin-top: 2px; }
+    .team-name { font-size: 10px; color: #c8c8c8; margin-top: 1px; }
+
+    /* ── Live clock row ── */
+    .clock-row { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; color: #888; font-weight: 600; }
+    .clock-row .period { color: var(--green2); }
+
+    /* ── Game meta / link ── */
+    .game-link { display: block; text-align: center; color: var(--green2); font-size: 13px; font-weight: 700; padding: 12px 0 2px; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+    .game-link:active { opacity: .6; }
+    .game-time { text-align: center; font-size: 15px; font-weight: 600; color: #333; }
+    .game-sub  { text-align: center; font-size: 12px; color: #aaa; margin-top: 3px; }
+
+    /* ── Standings ── */
+    .st-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .st-table th { color: #bbb; font-size: 11px; font-weight: 600; text-align: right; padding: 3px 0; }
+    .st-table th:first-child { text-align: left; }
+    .st-table td { padding: 7px 0; color: #666; text-align: right; border-top: 1px solid #f5f5f5; }
+    .st-table td:first-child { text-align: left; font-weight: 600; color: #1c1c1e; }
+    .st-table .elks td { color: var(--green); font-weight: 700; }
+    .st-table .elks td:first-child { color: var(--green); }
+    .st-table td.pts { font-weight: 700; color: var(--green); }
+    .div-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--gold); margin: 0 0 8px; }
+    .sec + .sec .div-title { margin-top: 0; }
+
+    /* ── Scoreboard rows (other games) ── */
+    .og-row { display: flex; align-items: center; padding: 9px 0; border-top: 1px solid #f2f2f2; gap: 6px; width: 100%; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+    .og-row:first-child { border-top: none; }
+    .og-row:active { background: #fafafa; }
+    .og-teams { display: flex; align-items: center; gap: 5px; flex: 1; min-width: 0; }
+    .og-team { font-size: 12px; font-weight: 700; color: #1c1c1e; width: 34px; flex-shrink: 0; }
+    .og-team.elks { color: var(--green); }
+    .og-score { font-size: 14px; font-weight: 700; color: #1c1c1e; min-width: 16px; text-align: center; }
+    .og-score.dim { color: #c4c4c4; }
+    .og-dash { font-size: 11px; color: #ccc; }
+    .og-status { margin-left: auto; font-size: 10px; font-weight: 700; flex-shrink: 0; white-space: nowrap; text-align: right; }
+    .og-live  { color: #ff3b30; }
+    .og-final { color: #999; font-weight: 600; }
+    .og-pre   { color: var(--green2); }
+    .og-chev  { color: #ddd; font-size: 15px; flex-shrink: 0; margin-left: 2px; }
+
+    /* ── Upcoming ── */
+    .up-row { padding: 10px 0; border-top: 1px solid #f2f2f2; }
+    .up-row:first-child { border-top: none; }
+    .up-match { font-size: 13px; font-weight: 700; color: #1c1c1e; }
+    .up-meta  { font-size: 11px; color: #aaa; margin-top: 2px; }
+
+    /* ── Footer ── */
+    .footer { text-align: center; padding: 4px 0 8px; }
+    .refresh-btn { background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.25); padding: 10px 28px; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .refresh-btn:active { background: rgba(255,255,255,.25); }
+    .updated { font-size: 11px; color: rgba(255,255,255,.35); margin-top: 8px; }
+    .copyright { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 11px; color: rgba(255,255,255,.3); margin-top: 8px; }
+    .copyright a { color: rgba(255,255,255,.7); text-decoration: underline; text-underline-offset: 2px; }
+    .copyright a:hover { color: #fff; }
+    .help-btn { background: none; color: rgba(255,255,255,.4); border: 1px solid rgba(255,255,255,.2); width: 18px; height: 18px; border-radius: 50%; font-size: 10px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
+    .help-btn:active { color: #fff; border-color: rgba(255,255,255,.5); }
+
+    /* ── README overlay ── */
+    #readme-bd { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:300; opacity:0; pointer-events:none; transition:opacity .25s; }
+    #readme-bd.open { opacity:1; pointer-events:auto; }
+    #readme-sh { position:fixed; left:0; right:0; bottom:0; z-index:301; background:#fff; border-radius:20px 20px 0 0; max-height:90vh; display:flex; flex-direction:column; transform:translateY(102%); transition:transform .3s cubic-bezier(.25,.46,.45,.94); box-shadow:0 -8px 32px rgba(0,0,0,.2); }
+    #readme-sh.open { transform:translateY(0); }
+    .ov-handle { width:36px; height:4px; background:#e0e0e0; border-radius:2px; margin:10px auto 0; flex-shrink:0; }
+    .readme-head { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-bottom:1px solid #f0f0f0; flex-shrink:0; }
+    .readme-title { font-size:15px; font-weight:700; color:#1c1c1e; }
+    .readme-close { background:none; border:none; font-size:24px; color:#bbb; cursor:pointer; line-height:1; padding:0 0 2px 16px; }
+    .readme-body { overflow-y:auto; flex:1; padding:16px; -webkit-overflow-scrolling:touch; line-height:1.6; font-size:13px; color:#444; }
+    .readme-body h1 { font-size:18px; font-weight:800; color:var(--green); margin:0 0 12px; }
+    .readme-body h2 { font-size:14px; font-weight:700; color:#1c1c1e; margin:16px 0 6px; border-bottom:1px solid #f0f0f0; padding-bottom:4px; }
+    .readme-body p { margin:0 0 8px; }
+    .readme-body ul { padding-left:18px; margin:0 0 8px; }
+    .readme-body li { margin-bottom:3px; }
+    .readme-body a { color:var(--green); }
+    .readme-body strong { color:#1c1c1e; }
+    .readme-body code { background:#f5f5f7; border-radius:4px; padding:1px 5px; font-size:12px; }
+
+    /* ── States ── */
+    .loading { color: #aaa; font-size: 14px; text-align: center; padding: 28px; }
+    .err     { color: #ff3b30; font-size: 13px; text-align: center; padding: 20px; line-height: 1.5; }
+    .off-msg { color: #888; font-size: 15px; text-align: center; padding: 8px 0 4px; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header class="header">
+    <img class="logo-img"
+      src="https://cflscoreboard.cfl.ca/media/squads/114347.png"
+      onerror="this.onerror=null;this.src='icon.svg'"
+      alt="Edmonton Elks">
+    <h1>Edmonton Elks</h1>
+    <p class="date" id="date-label"></p>
+  </header>
+
+  <div id="game-section"><div class="card"><div class="loading">Loading…</div></div></div>
+  <div id="standings-section"></div>
+  <div id="scoreboard-section"></div>
+  <div id="upcoming-section"></div>
+
+  <div class="footer">
+    <button class="refresh-btn" onclick="manualRefresh()">Refresh</button>
+    <p class="updated" id="updated"></p>
+    <p class="copyright">
+      © 2026 <a href="https://github.com/timtomnow/elks-score" target="_blank" rel="noopener">timtomnow</a>
+      <button class="help-btn" onclick="openReadme()" aria-label="About this app">?</button>
+    </p>
+  </div>
+</div>
+
+<div id="readme-bd" onclick="closeReadme()"></div>
+<div id="readme-sh">
+  <div class="ov-handle"></div>
+  <div class="readme-head">
+    <div class="readme-title">About this app</div>
+    <button class="readme-close" onclick="closeReadme()">&#x2715;</button>
+  </div>
+  <div class="readme-body" id="readme-body"><div class="loading">Loading…</div></div>
+</div>
+
+<script>
+  // ── Constants ───────────────────────────────────────────────────────────────
+  const ELKS_ID = 114347;            // Edmonton Elks (Genius Sports squad id)
+  const BASE    = 'https://cflscoreboard.cfl.ca/json/scoreboard';
+
+  // CFL divisions (squad id → division)
+  const WEST = new Set([93775, 112939, 114347, 106752, 110380]); // BC, CGY, EDM, SSK, WPG
+  const EAST = new Set([83579, 86680, 88019, 122345]);           // HAM, MTL, OTT, TOR
+
+  // Game statuses that mean the game is in progress
+  const LIVE_STATUSES = new Set([
+    'first_quarter', 'second_quarter', 'half_time',
+    'third_quarter', 'fourth_quarter', 'overtime', 'pre_match',
+  ]);
+  // Period label per status
+  const PERIOD_LABEL = {
+    first_quarter: '1st', second_quarter: '2nd', half_time: 'Half',
+    third_quarter: '3rd', fourth_quarter: '4th', overtime: 'OT', pre_match: 'Pre',
+  };
+
+  const isLive      = g => LIVE_STATUSES.has(g.status);
+  const isComplete  = g => g.status === 'complete';
+  const isScheduled = g => g.status === 'scheduled';
+  const isCanceled  = g => g.status === 'canceled';
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  function fmtTime(utc) {
+    if (!utc) return '';
+    return new Date(utc).toLocaleTimeString('en-CA', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+  }
+  function fmtDate(utc, opts) {
+    if (!utc) return '';
+    return new Date(utc).toLocaleDateString('en-CA', opts || { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+
+  // CFL points: win = 2, tie = 1, loss = 0
+  const points = s => (s.wins ?? 0) * 2 + (s.draw ?? 0);
+  function record(s) {
+    if (!s) return '';
+    const t = s.draw ?? 0;
+    return t > 0 ? `${s.wins}–${s.loss}–${t}` : `${s.wins}–${s.loss}`;
+  }
+
+  // Build the official CFL gametracker / preview link for a game
+  function gameTrackerLink(g) {
+    if (!g.cflId) return null;
+    const slug = name => (name || '').toLowerCase().replaceAll(' ', '-');
+    const home = slug(g.homeSquad?.name);
+    const away = slug(g.awaySquad?.name);
+    const state = isLive(g) ? '#gametracker' : '#preview';
+    return `https://www.cfl.ca/games/${g.cflId}/${home}-vs-${away}/${state}`;
+  }
+
+  // ── API ───────────────────────────────────────────────────────────────────
+  async function getJSON(path) {
+    const r = await fetch(`${BASE}/${path}`);   // gzip handled transparently by the browser
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  }
+  const fetchSquads = () => getJSON('squads.json');
+  const fetchRounds = () => getJSON('rounds.json');
+
+  // ── Global state ────────────────────────────────────────────────────────────
+  let SQUADS = {};   // id → squad
+
+  // Flatten every game out of the rounds, tagging each with its round info
+  function allGames(rounds) {
+    const games = [];
+    for (const r of rounds) {
+      for (const t of (r.tournaments ?? [])) {
+        if (t.isHidden) continue;
+        games.push({ ...t, _round: r });
+      }
+    }
+    return games;
+  }
+
+  function involvesElks(g) {
+    return g.homeSquad?.id === ELKS_ID || g.awaySquad?.id === ELKS_ID;
+  }
+
+  // Pick the most relevant Elks game: live > next scheduled > most recent complete
+  function featuredElksGame(games) {
+    const elks = games.filter(involvesElks);
+    const live = elks.find(isLive);
+    if (live) return live;
+    const now = Date.now();
+    const upcoming = elks
+      .filter(g => isScheduled(g) && new Date(g.date).getTime() >= now)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+    if (upcoming.length) return upcoming[0];
+    const past = elks
+      .filter(isComplete)
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+    return past[0] || null;
+  }
+
+  // Pick which round to show on the scoreboard: any with a live game,
+  // else the round whose window contains now, else next upcoming, else last.
+  function activeRound(rounds) {
+    const live = rounds.find(r => (r.tournaments ?? []).some(isLive));
+    if (live) return live;
+    const now = Date.now();
+    const within = rounds.find(r => {
+      const s = new Date(r.startDate).getTime();
+      const e = new Date(r.endDate).getTime();
+      return now >= s && now <= e;
+    });
+    if (within) return within;
+    const upcoming = rounds
+      .filter(r => new Date(r.startDate).getTime() >= now)
+      .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+    if (upcoming.length) return upcoming[0];
+    return rounds[rounds.length - 1] || null;
+  }
+
+  // ── Featured game card ────────────────────────────────────────────────────
+  function renderFeatured(g) {
+    if (!g) {
+      return `<div class="card"><div class="sec">
+        <span class="badge b-off">Off Season</span>
+        <div class="off-msg">No Elks games scheduled right now.</div>
+      </div></div>`;
+    }
+
+    const aw = g.awaySquad, hm = g.homeSquad;
+    const awSq = SQUADS[aw.id], hmSq = SQUADS[hm.id];
+    const live = isLive(g), final = isComplete(g), sched = isScheduled(g);
+
+    const awWon = final && g.winner === aw.id;
+    const hmWon = final && g.winner === hm.id;
+    const possAway = live && g.possession === 'Away';
+    const possHome = live && g.possession === 'Home';
+
+    let badgeCls = 'b-off', badgeTxt = g.status;
+    if (live)  { badgeCls = 'b-live';    badgeTxt = 'Live'; }
+    if (final) { badgeCls = 'b-final';   badgeTxt = 'Final'; }
+    if (sched) { badgeCls = 'b-preview'; badgeTxt = g._round?.name || 'Upcoming'; }
+    if (isCanceled(g)) { badgeCls = 'b-off'; badgeTxt = 'Canceled'; }
+
+    const showScore = live || final;
+    const awScore = showScore ? (aw.score ?? 0) : '—';
+    const hmScore = showScore ? (hm.score ?? 0) : '—';
+
+    let html = `<div class="sec">
+      <div class="score-header">
+        <span class="badge ${badgeCls}">${badgeTxt}</span>
+        ${live ? `<span class="clock-row"><span class="period">${PERIOD_LABEL[g.status] || ''}</span><span>${g.clock || ''}</span></span>` : ''}
+        ${sched ? `<span style="font-size:13px;font-weight:600;color:#333">${fmtTime(g.date)}</span>` : ''}
+      </div>
+      <div class="score-row">
+        <div class="team-col">
+          <div class="team-abbr">${possAway ? '<span class="poss-dot"></span>' : ''}${aw.shortName}</div>
+          <div class="score-num ${final && awWon ? 'hi' : final && !awWon ? 'dim' : ''}">${awScore}</div>
+          <div class="team-record">${record(awSq)}</div>
+        </div>
+        ${sched ? `<span class="score-vs">@</span>` : `<span class="score-dash">–</span>`}
+        <div class="team-col">
+          <div class="team-abbr">${possHome ? '<span class="poss-dot"></span>' : ''}${hm.shortName}</div>
+          <div class="score-num ${final && hmWon ? 'hi' : final && !hmWon ? 'dim' : ''}">${hmScore}</div>
+          <div class="team-record">${record(hmSq)}</div>
+        </div>
+      </div>`;
+
+    if (sched) {
+      html += `<div style="margin-top:12px">
+        <div class="game-time">${aw.name} @ ${hm.name}</div>
+        <div class="game-sub">${fmtDate(g.date, { weekday: 'long', month: 'long', day: 'numeric' })}</div>
+      </div>`;
+    }
+    html += `</div>`;
+
+    const link = gameTrackerLink(g);
+    if (link) {
+      const label = live ? 'Live Game Tracker →' : final ? 'Game Stats & Recap →' : 'Game Preview →';
+      html += `<div class="sec" style="padding-top:10px;padding-bottom:12px">
+        <a class="game-link" href="${link}" target="_blank" rel="noopener">${label}</a>
+      </div>`;
+    }
+
+    return `<div class="card">${html}</div>`;
+  }
+
+  // ── Standings card (by division, CFL points) ──────────────────────────────
+  function divisionTable(title, ids) {
+    const rows = Object.values(SQUADS)
+      .filter(s => ids.has(s.id))
+      .sort((a, b) => points(b) - points(a) || b.wins - a.wins || a.loss - b.loss);
+    if (!rows.length) return '';
+    const body = rows.map(s => {
+      const gp = (s.wins ?? 0) + (s.loss ?? 0) + (s.draw ?? 0);
+      const cls = s.id === ELKS_ID ? ' class="elks"' : '';
+      return `<tr${cls}>
+        <td>${s.name}</td>
+        <td>${gp}</td>
+        <td>${s.wins ?? 0}</td>
+        <td>${s.loss ?? 0}</td>
+        <td>${s.draw ?? 0}</td>
+        <td class="pts">${points(s)}</td>
+      </tr>`;
+    }).join('');
+    return `<div class="sec">
+      <div class="div-title">${title}</div>
+      <table class="st-table">
+        <thead><tr><th>Team</th><th>GP</th><th>W</th><th>L</th><th>T</th><th>Pts</th></tr></thead>
+        <tbody>${body}</tbody>
+      </table>
+    </div>`;
+  }
+
+  function renderStandings() {
+    const west = divisionTable('West Division', WEST);
+    const east = divisionTable('East Division', EAST);
+    if (!west && !east) return '';
+    return `<div class="card">
+      <div class="sec" style="padding-bottom:6px"><div class="sec-title">CFL Standings</div></div>
+      ${west}${east}
+    </div>`;
+  }
+
+  // ── Scoreboard card (active week) ─────────────────────────────────────────
+  function scoreRow(g) {
+    const aw = g.awaySquad, hm = g.homeSquad;
+    const live = isLive(g), final = isComplete(g);
+    const showScore = live || final;
+
+    let statusHtml;
+    if (live)  statusHtml = `<span class="og-status og-live">${PERIOD_LABEL[g.status] || 'Live'}${g.clock ? ' · ' + g.clock : ''}</span>`;
+    else if (final) statusHtml = `<span class="og-status og-final">Final</span>`;
+    else if (isCanceled(g)) statusHtml = `<span class="og-status og-final">Canceled</span>`;
+    else statusHtml = `<span class="og-status og-pre">${fmtTime(g.date)}</span>`;
+
+    const awWon = final && g.winner === aw.id;
+    const hmWon = final && g.winner === hm.id;
+    const awCls = aw.id === ELKS_ID ? ' elks' : '';
+    const hmCls = hm.id === ELKS_ID ? ' elks' : '';
+
+    const scoreOrAt = showScore
+      ? `<span class="og-score ${final && !awWon ? 'dim' : ''}">${aw.score ?? 0}</span><span class="og-dash">–</span><span class="og-score ${final && !hmWon ? 'dim' : ''}">${hm.score ?? 0}</span>`
+      : `<span class="og-dash">@</span>`;
+
+    const link = gameTrackerLink(g);
+    const tag = link ? 'a' : 'div';
+    const href = link ? ` href="${link}" target="_blank" rel="noopener"` : '';
+    return `<${tag} class="og-row"${href}>
+      <div class="og-teams">
+        <span class="og-team${awCls}">${aw.shortName}</span>
+        ${scoreOrAt}
+        <span class="og-team${hmCls}">${hm.shortName}</span>
+      </div>
+      ${statusHtml}
+      ${link ? '<span class="og-chev">›</span>' : ''}
+    </${tag}>`;
+  }
+
+  function renderScoreboard(round) {
+    const games = (round?.tournaments ?? []).filter(t => !t.isHidden);
+    if (!games.length) return '';
+    games.sort((a, b) => new Date(a.date) - new Date(b.date));
+    return `<div class="card"><div class="sec">
+      <div class="sec-title">${round.name || 'This Week'}</div>
+      ${games.map(scoreRow).join('')}
+    </div></div>`;
+  }
+
+  // ── Upcoming Elks games ───────────────────────────────────────────────────
+  function renderUpcoming(games) {
+    const now = Date.now();
+    const upcoming = games
+      .filter(g => involvesElks(g) && isScheduled(g) && new Date(g.date).getTime() >= now)
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .slice(1, 4);   // skip [0] — that's the featured game
+    if (!upcoming.length) return '';
+    const rows = upcoming.map(g => {
+      const elksAway = g.awaySquad.id === ELKS_ID;
+      const opp = elksAway ? g.homeSquad : g.awaySquad;
+      const ha = elksAway ? '@ ' : 'vs ';
+      return `<div class="up-row">
+        <div class="up-match">${ha}${opp.name}</div>
+        <div class="up-meta">${fmtDate(g.date)} · ${fmtTime(g.date)}</div>
+      </div>`;
+    }).join('');
+    return `<div class="card"><div class="sec">
+      <div class="sec-title">Upcoming Elks Games</div>
+      ${rows}
+    </div></div>`;
+  }
+
+  // ── Main load ─────────────────────────────────────────────────────────────
+  async function load() {
+    const gameEl = document.getElementById('game-section');
+    gameEl.innerHTML = '<div class="card"><div class="loading">Loading…</div></div>';
+
+    document.getElementById('date-label').textContent = new Date().toLocaleDateString('en-CA', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+    try {
+      const [squads, rounds] = await Promise.all([fetchSquads(), fetchRounds()]);
+      SQUADS = Object.fromEntries(squads.filter(s => s.id !== 0).map(s => [s.id, s]));
+
+      const games = allGames(rounds);
+
+      gameEl.innerHTML = renderFeatured(featuredElksGame(games));
+      document.getElementById('standings-section').innerHTML = renderStandings();
+      document.getElementById('scoreboard-section').innerHTML = renderScoreboard(activeRound(rounds));
+      document.getElementById('upcoming-section').innerHTML = renderUpcoming(games);
+
+      document.getElementById('updated').textContent =
+        'Updated at ' + new Date().toLocaleTimeString('en-CA', { hour: 'numeric', minute: '2-digit' });
+    } catch (e) {
+      gameEl.innerHTML = `<div class="card"><div class="err">Could not load data.<br>${e.message}</div></div>`;
+    }
+  }
+
+  function manualRefresh() { load(); }
+
+  // ── README overlay ────────────────────────────────────────────────────────
+  function githubRawUrl() {
+    const { hostname, pathname } = window.location;
+    if (hostname.endsWith('.github.io')) {
+      const user = hostname.replace('.github.io', '');
+      const repo = pathname.split('/').filter(Boolean)[0] ?? '';
+      if (repo) return `https://raw.githubusercontent.com/${user}/${repo}/main/README.md`;
+    }
+    return null;
+  }
+
+  function parseMarkdown(md) {
+    return md
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+      .replace(/^- (.+)$/gm, '<li>$1</li>')
+      .replace(/(<li>[\s\S]*?<\/li>)(\n(?!<li>))/g, '<ul>$1</ul>\n')
+      .replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`)
+      .replace(/\n\n+/g, '</p><p>')
+      .replace(/^(?!<[hup])/gm, '')
+      .replace(/<\/ul><ul>/g, '')
+      .replace(/(<p>|<\/p>)+/g, m => m.length > 4 ? '<p>' : m);
+  }
+
+  async function openReadme() {
+    document.getElementById('readme-bd').classList.add('open');
+    document.getElementById('readme-sh').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    const bodyEl = document.getElementById('readme-body');
+    bodyEl.innerHTML = '<div class="loading">Loading…</div>';
+    try {
+      let md = null;
+      try {
+        const r = await fetch('./README.md');
+        if (r.ok) md = await r.text();
+      } catch(_) {}
+      if (!md) {
+        const fallback = githubRawUrl();
+        if (!fallback) throw new Error('README could not be loaded');
+        const r = await fetch(fallback);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        md = await r.text();
+      }
+      bodyEl.innerHTML = parseMarkdown(md);
+    } catch(e) {
+      bodyEl.innerHTML = `<div class="err">Could not load README.<br>${e.message}</div>`;
+    }
+  }
+
+  function closeReadme() {
+    document.getElementById('readme-bd').classList.remove('open');
+    document.getElementById('readme-sh').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  // Self-rescheduling refresh: 30 s when a game is live, otherwise 5 min
+  function scheduleRefresh() {
+    const live = !!document.querySelector('.b-live') || !!document.querySelector('.og-live');
+    setTimeout(async () => {
+      await load();
+      scheduleRefresh();
+    }, live ? 30_000 : 300_000);
+  }
+  scheduleRefresh();
+
+  load();
+</script>
+</body>
+</html>

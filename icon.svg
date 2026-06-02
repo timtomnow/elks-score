@@ -1,0 +1,23 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="112" fill="#14452F"/>
+  <!-- Antlers -->
+  <g fill="none" stroke="#F2A900" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+    <!-- left antler -->
+    <path d="M256 300 C 240 240 210 210 170 196"/>
+    <path d="M205 214 C 188 188 178 168 180 140"/>
+    <path d="M196 206 C 168 196 146 196 124 206"/>
+    <path d="M170 196 C 150 178 138 156 138 130"/>
+    <!-- right antler -->
+    <path d="M256 300 C 272 240 302 210 342 196"/>
+    <path d="M307 214 C 324 188 334 168 332 140"/>
+    <path d="M316 206 C 344 196 366 196 388 206"/>
+    <path d="M342 196 C 362 178 374 156 374 130"/>
+  </g>
+  <!-- E monogram -->
+  <g fill="#F2A900">
+    <rect x="206" y="320" width="100" height="22" rx="6"/>
+    <rect x="206" y="362" width="78" height="22" rx="6"/>
+    <rect x="206" y="404" width="100" height="22" rx="6"/>
+    <rect x="206" y="320" width="22" height="106" rx="6"/>
+  </g>
+</svg>
