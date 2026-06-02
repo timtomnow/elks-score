@@ -2,6 +2,8 @@
 
 A lightweight web app for tracking the Edmonton Elks and the rest of the CFL — live scores, division standings, the weekly scoreboard, and deep links to official game stats. Installable as a home screen app on Android and iPhone.
 
+**Demo:** [timtomnow.github.io/elks-score](https://timtomnow.github.io/elks-score/)
+
 ## Features
 
 **Featured Elks game**
