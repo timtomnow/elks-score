@@ -1,6 +1,6 @@
 # Elks Score
 
-A lightweight web app for tracking the Edmonton Elks and the rest of the CFL — live scores, division standings, the weekly scoreboard, and deep links to official game stats. Installable as a home screen app on Android and iPhone.
+A lightweight web app for tracking the Edmonton Elks and the rest of the CFL — live scores, division standings, the weekly scoreboard, and inline team & player box scores. Installable as a home screen app on Android and iPhone.
 
 **Demo:** [timtomnow.github.io/elks-score](https://timtomnow.github.io/elks-score/)
 
@@ -13,6 +13,12 @@ A lightweight web app for tracking the Edmonton Elks and the rest of the CFL —
 - Team records (W–L–T)
 - Expandable **Game details**: round / pre-season label, kickoff time, and timeouts remaining while live
 - A clearly branded **CFL.ca** button linking to the official box score, live game tracker, or preview for deeper stats
+
+**Game stats (box score)**
+- Inline team & player stats for the relevant Elks game — live if one is on, otherwise the most recent final
+- Team comparison: total / passing / rushing yards, first downs, 3rd-down efficiency, time of possession, penalties, turnovers
+- Passing, rushing, and receiving leaders for both teams
+- Best-effort: the section quietly hides itself if stats aren't available for a game
 
 **Recent Elks results**
 - The last few completed Elks games, **including pre-season**, with final score, win/loss tag, round, and date
@@ -35,16 +41,27 @@ A lightweight web app for tracking the Edmonton Elks and the rest of the CFL —
 
 ## Data source
 
-This app reads the same public JSON feed that powers the live scoreboard widget on **cfl.ca** (provided via Genius Sports):
+The app draws on two public, undocumented feeds, both ultimately provided via **Genius Sports** and both powering widgets on **cfl.ca**.
+
+**1. Scoreboard feed** — schedule, scores, standings, game state:
 
 - `…/json/scoreboard/squads.json` — teams and records
 - `…/json/scoreboard/rounds.json` — schedule, live scores, and game state
 
-These are undocumented, unofficial endpoints with no published usage terms — great for a personal app, but they can change without notice. Deeper stats (box scores, play-by-play) are not in this feed; the app links out to CFL's official Game Tracker for those.
+**2. Game Tracker feed** — the team & player box scores (the Game Stats card):
 
-### Why a proxy is required
+- `gsm-widgets.betstream.betgenius.com/widget-data/multisportgametracker?…&fixtureId=<id>&activeContent=teamStats|playerStats`
+- The `fixtureId` is the **same id the scoreboard feed already provides** for each game (`rounds.json` → `tournaments[].id`), so no separate lookup is needed
+- The feed also exposes full play-by-play (`activeContent=court`) — not yet surfaced in the app
+- The app reads **stats only**; the betting/odds fields some of these payloads carry are never requested or displayed
 
-The upstream feed (`cflscoreboard.cfl.ca`) sends **no CORS headers**, so a browser will refuse to fetch it from any origin other than cfl.ca itself. To get around this, the app talks to a small **Cloudflare Worker** that fetches the feed server-side and re-serves it with CORS headers and short edge-cache TTLs. (Same pattern as the `oilers-score` repo.)
+These are undocumented, unofficial endpoints with no published usage terms — great for a personal app, but they can change without notice. (Note: the old official `api.cfl.ca` is gone; this Game Tracker feed is the live replacement for box-score data.)
+
+### Why a proxy is required (scoreboard feed only)
+
+The scoreboard feed (`cflscoreboard.cfl.ca`) sends **no CORS headers**, so a browser will refuse to fetch it from any origin other than cfl.ca itself. To get around this, the app talks to a small **Cloudflare Worker** that fetches the feed server-side and re-serves it with CORS headers and short edge-cache TTLs. (Same pattern as the `oilers-score` repo.)
+
+The Game Tracker feed, by contrast, already responds with `Access-Control-Allow-Origin: *`, so the app fetches it **directly from the browser — no proxy needed**.
 
 ## Setup
 
@@ -72,7 +89,8 @@ It's a static site — host the repo root anywhere (e.g. GitHub Pages). Opening 
 
 - **Tier 1 (done):** live scores, standings, weekly scoreboard, links to official game stats
 - **Tier 1.5 (done):** recent results including pre-season, expandable game details (round, kickoff, live timeouts), and clearly branded CFL.ca links — surfacing everything the public scoreboard feed actually exposes
-- **Tier 2 (later):** full box scores / player stats / play-by-play inline. **Not available from the public scoreboard feed** (it carries summary data only, and the old official `api.cfl.ca` is gone), so this would require scraping CFL's gametracker pages — fragile and out of scope for now. The app links out to CFL.ca for these instead.
+- **Tier 2 (done):** inline team & player box scores, fetched directly from CFL's Game Tracker feed (Genius Sports) keyed by the game id we already have. The scoreboard feed itself carries only summary data, but the Game Tracker feed exposes full team stats, player stats, and play-by-play.
+- **Tier 3 (later):** surface the play-by-play (`activeContent=court`) inline, and per-game stat history / trends
 
 ## Tech
 

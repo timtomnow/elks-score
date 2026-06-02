@@ -139,6 +139,32 @@
     .up-match { font-size: 13px; font-weight: 700; color: #1c1c1e; }
     .up-meta  { font-size: 11px; color: #aaa; margin-top: 2px; }
 
+    /* ── Game stats (Tier 2: Genius Sports box score) ── */
+    .gs-score { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 2px 0 1px; }
+    .gs-ab { font-size: 13px; font-weight: 800; letter-spacing: .5px; }
+    .gs-num { font-size: 20px; font-weight: 800; color: #1c1c1e; line-height: 1; }
+    .gs-dash { font-size: 14px; color: #ddd; font-weight: 300; }
+    .gs-sub { text-align: center; font-size: 11px; color: #aaa; margin-bottom: 12px; }
+    .a-clr { color: var(--gold); }
+    .h-clr { color: var(--green2); }
+
+    .ts-row { padding: 8px 0; border-top: 1px solid #f5f5f5; }
+    .ts-row:first-child { border-top: none; }
+    .ts-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 5px; }
+    .ts-val { font-size: 13px; font-weight: 700; color: #1c1c1e; min-width: 48px; }
+    .ts-val.r { text-align: right; }
+    .ts-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #b0b0b0; }
+    .ts-bar { display: flex; height: 5px; border-radius: 3px; overflow: hidden; background: #f0f0f0; }
+    .ts-bar-a { background: var(--gold); }
+    .ts-bar-h { background: var(--green2); }
+
+    .pl-cat { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #c4c4c4; margin: 14px 0 1px; }
+    .pl-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-top: 1px solid #f7f7f7; }
+    .pl-team { font-size: 10px; font-weight: 800; width: 30px; flex-shrink: 0; letter-spacing: .3px; }
+    .pl-name { font-size: 12px; font-weight: 600; color: #1c1c1e; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pl-name small { color: #c0c0c0; font-weight: 600; }
+    .pl-stat { font-size: 11px; color: #888; flex-shrink: 0; text-align: right; }
+
     /* ── Footer ── */
     .footer { text-align: center; padding: 4px 0 8px; }
     .refresh-btn { background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.25); padding: 10px 28px; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; }
@@ -187,6 +213,7 @@
   </header>
 
   <div id="game-section"><div class="card"><div class="loading">Loading…</div></div></div>
+  <div id="stats-section"></div>
   <div id="standings-section"></div>
   <div id="scoreboard-section"></div>
   <div id="results-section"></div>
@@ -571,6 +598,166 @@
     </div></div>`;
   }
 
+  // ── Game stats (Tier 2) ───────────────────────────────────────────────────
+  // The cfl.ca Game Tracker is an embedded Genius Sports widget. Its data feed
+  // is public, CORS-enabled (Access-Control-Allow-Origin: *) and needs no proxy.
+  // It's keyed by the same id we already have: each scoreboard tournament's `id`
+  // IS the Genius fixtureId. So once we have the game id, we can pull full team
+  // and player box scores. Strictly stats — these payloads carry no betting data.
+  const GT_BASE = 'https://gsm-widgets.betstream.betgenius.com/widget-data/multisportgametracker';
+  const gtUrl = (fixtureId, content) =>
+    `${GT_BASE}?productName=democfl_light&fixtureId=${fixtureId}&activeContent=${content}` +
+    `&sport=AmericanFootball&isUsingBetGeniusId=true`;
+
+  async function gtFetch(fixtureId, content) {
+    try {
+      const r = await fetch(gtUrl(fixtureId, content));
+      if (!r.ok) return null;
+      return (await r.json())?.data || null;
+    } catch (_) { return null; }
+  }
+
+  // Which Elks game has stats worth showing: live > most recent completed.
+  function statsElksGame(games) {
+    const elks = games.filter(involvesElks);
+    return elks.find(isLive)
+        || elks.filter(isComplete).sort((a, b) => new Date(b.date) - new Date(a.date))[0]
+        || null;
+  }
+
+  const num = v => parseFloat(v) || 0;
+  const statVal = (p, name) => (p.stats?.find(s => s.name === name) || {}).statValue ?? '';
+
+  // Curated team-stat rows (by stable `id`), with how to read each shape.
+  const TEAM_STAT_ROWS = [
+    { id: 'total_net_yards',       label: 'Total yards' },
+    { id: 'passing_yards',         label: 'Passing yards' },
+    { id: 'rushing_yards',         label: 'Rushing yards' },
+    { id: 'first_down',            label: 'First downs' },
+    { id: 'third_down_efficiency', label: '3rd down', kind: 'pct' },
+    { id: 'time_possession',       label: 'Possession', kind: 'time' },
+    { id: 'penalties_detailed',    label: 'Penalties', kind: 'penalty' },
+    { id: 'turnovers',             label: 'Turnovers' },
+  ];
+
+  function teamStatRow(stats, def) {
+    const e = stats.find(s => s.id === def.id);
+    if (!e) return null;
+    let aDisp, hDisp, aNum, hNum;
+    if (def.kind === 'pct') {
+      aDisp = e.away; hDisp = e.home; aNum = e.awayPercentage || 0; hNum = e.homePercentage || 0;
+    } else if (def.kind === 'time') {
+      aDisp = e.away; hDisp = e.home; aNum = e.awaySeconds || 0; hNum = e.homeSeconds || 0;
+    } else if (def.kind === 'penalty') {
+      aDisp = `${e.away[0]}–${e.away[1]}`; hDisp = `${e.home[0]}–${e.home[1]}`;
+      aNum = num(e.away[1]); hNum = num(e.home[1]);
+    } else {
+      aDisp = String(e.away[0]); hDisp = String(e.home[0]); aNum = num(e.away[0]); hNum = num(e.home[0]);
+    }
+    return { label: def.label, aDisp, hDisp, aNum, hNum };
+  }
+
+  function teamStatsHtml(stats) {
+    const rows = TEAM_STAT_ROWS.map(d => teamStatRow(stats, d)).filter(Boolean);
+    if (!rows.length) return '';
+    return rows.map(r => {
+      const total = r.aNum + r.hNum;
+      const aw = total > 0 ? Math.round(r.aNum / total * 100) : 50;
+      return `<div class="ts-row">
+        <div class="ts-head">
+          <span class="ts-val">${r.aDisp}</span>
+          <span class="ts-label">${r.label}</span>
+          <span class="ts-val r">${r.hDisp}</span>
+        </div>
+        <div class="ts-bar"><span class="ts-bar-a" style="width:${aw}%"></span><span class="ts-bar-h" style="width:${100 - aw}%"></span></div>
+      </div>`;
+    }).join('');
+  }
+
+  // Top performer (by yards) from a category array.
+  const leader = arr => (arr && arr.length)
+    ? arr.slice().sort((a, b) => num(statVal(b, 'YARDS')) - num(statVal(a, 'YARDS')))[0]
+    : null;
+
+  function passLine(p) {
+    let s = `${statVal(p, 'YARDS')} yds · ${statVal(p, 'COMPLETIONS_ATTEMPTS')}`;
+    if (num(statVal(p, 'TOUCHDOWNS')))    s += ` · ${statVal(p, 'TOUCHDOWNS')} TD`;
+    if (num(statVal(p, 'INTERCEPTIONS'))) s += ` · ${statVal(p, 'INTERCEPTIONS')} INT`;
+    return s;
+  }
+  function rushLine(p) {
+    let s = `${statVal(p, 'YARDS')} yds · ${statVal(p, 'CARRIES')} car`;
+    if (num(statVal(p, 'TOUCHDOWNS'))) s += ` · ${statVal(p, 'TOUCHDOWNS')} TD`;
+    return s;
+  }
+  function recLine(p) {
+    let s = `${statVal(p, 'YARDS')} yds · ${statVal(p, 'RECEPTIONS')} rec`;
+    if (num(statVal(p, 'TOUCHDOWNS'))) s += ` · ${statVal(p, 'TOUCHDOWNS')} TD`;
+    return s;
+  }
+
+  function playerRow(abbr, side, p, lineFn) {
+    if (!p || !statVal(p, 'YARDS')) return '';
+    return `<div class="pl-row">
+      <span class="pl-team ${side}-clr">${abbr}</span>
+      <span class="pl-name">${p.name} <small>#${p.number ?? ''}</small></span>
+      <span class="pl-stat">${lineFn(p)}</span>
+    </div>`;
+  }
+
+  function playerStatsHtml(ps, awayAbbr, homeAbbr) {
+    const cats = [
+      { key: 'passing',   title: 'Passing',   fn: passLine },
+      { key: 'rushing',   title: 'Rushing',   fn: rushLine },
+      { key: 'receiving', title: 'Receiving', fn: recLine },
+    ];
+    let html = '';
+    for (const c of cats) {
+      const a = playerRow(awayAbbr, 'a', leader(ps.awayTeam?.[c.key]), c.fn);
+      const h = playerRow(homeAbbr, 'h', leader(ps.homeTeam?.[c.key]), c.fn);
+      if (a || h) html += `<div class="pl-cat">${c.title} leaders</div>${a}${h}`;
+    }
+    return html;
+  }
+
+  function renderGameStats(team, player) {
+    const root = team || player;
+    if (!root) return '';
+    const info = root.matchInfo, sb = root.scoreboardInfo;
+    const awayAbbr = info?.awayTeam?.details?.abbreviation || info?.awayTeam?.abbreviation || '';
+    const homeAbbr = info?.homeTeam?.details?.abbreviation || info?.homeTeam?.abbreviation || '';
+
+    const teamHtml   = team?.teamStats ? teamStatsHtml(team.teamStats) : '';
+    const playerHtml = player?.playerStats ? playerStatsHtml(player.playerStats, awayAbbr, homeAbbr) : '';
+    if (!teamHtml && !playerHtml) return '';
+
+    const status = sb?.matchStatus === 'PostMatch' ? 'Final' : 'Live';
+    return `<div class="card"><div class="sec">
+      <div class="sec-title">Game Stats</div>
+      <div class="gs-score">
+        <span class="gs-ab a-clr">${awayAbbr}</span>
+        <span class="gs-num">${sb?.awayScore ?? ''}</span>
+        <span class="gs-dash">–</span>
+        <span class="gs-num">${sb?.homeScore ?? ''}</span>
+        <span class="gs-ab h-clr">${homeAbbr}</span>
+      </div>
+      <div class="gs-sub">${info?.roundName || ''}${info?.roundName ? ' · ' : ''}${status}</div>
+      ${teamHtml}
+      ${playerHtml}
+    </div></div>`;
+  }
+
+  async function loadGameStats(g) {
+    const el = document.getElementById('stats-section');
+    if (!g || !g.id) { el.innerHTML = ''; return; }
+    el.innerHTML = `<div class="card"><div class="sec">
+      <div class="sec-title">Game Stats</div>
+      <div class="loading" style="padding:18px 0 6px">Loading game stats…</div>
+    </div></div>`;
+    const [team, player] = await Promise.all([gtFetch(g.id, 'teamStats'), gtFetch(g.id, 'playerStats')]);
+    el.innerHTML = renderGameStats(team, player);   // '' if nothing usable — section just disappears
+  }
+
   // ── Main load ─────────────────────────────────────────────────────────────
   async function load() {
     const gameEl = document.getElementById('game-section');
@@ -591,6 +778,10 @@
       document.getElementById('scoreboard-section').innerHTML = renderScoreboard(activeRound(rounds));
       document.getElementById('results-section').innerHTML = renderResults(games);
       document.getElementById('upcoming-section').innerHTML = renderUpcoming(games);
+
+      // Tier 2 box score — fetched separately (different host) so it never blocks
+      // or breaks the core feed; the section quietly hides if stats aren't available.
+      loadGameStats(statsElksGame(games));
 
       document.getElementById('updated').textContent =
         'Updated at ' + new Date().toLocaleTimeString('en-CA', { hour: 'numeric', minute: '2-digit' });
