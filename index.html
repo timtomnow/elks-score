@@ -11,6 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Elks Score">
   <link rel="apple-touch-icon" href="icon.svg">
+  <script src="config.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -181,8 +182,8 @@
 
 <script>
   // ── Constants ───────────────────────────────────────────────────────────────
-  const ELKS_ID = 114347;            // Edmonton Elks (Genius Sports squad id)
-  const BASE    = 'https://cflscoreboard.cfl.ca/json/scoreboard';
+  const ELKS_ID = CONFIG.TEAM_ID;                          // Edmonton Elks (Genius Sports squad id)
+  const BASE    = CONFIG.CFL_API_BASE + '/json/scoreboard'; // via Cloudflare Worker CORS proxy
 
   // CFL divisions (squad id → division)
   const WEST = new Set([93775, 112939, 114347, 106752, 110380]); // BC, CGY, EDM, SSK, WPG

@@ -1,0 +1,21 @@
+name = "elks-score-proxy"
+main = "index.js"
+compatibility_date = "2024-09-23"
+
+# ── Environment variables ────────────────────────────────────────────────────
+# Daily request cap before the worker returns 429 (only enforced when the
+# RATE_KV namespace below is enabled). CF free tier is 100,000/day.
+[vars]
+DAILY_CAP = "50000"
+
+# ── KV namespace (optional) ──────────────────────────────────────────────────
+# The worker runs fine without this — rate limiting is simply skipped. Traffic
+# for a personal app is tiny and edge-cached, so KV is usually unnecessary.
+#
+# To enable the daily cap, create a namespace and uncomment the block below:
+#   npx wrangler kv namespace create RATE_KV
+# then paste the returned id.
+#
+# [[kv_namespaces]]
+# binding = "RATE_KV"
+# id = "PASTE_KV_NAMESPACE_ID_HERE"

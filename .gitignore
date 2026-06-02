@@ -1,0 +1,6 @@
+# Wrangler CLI cache — contains local account/auth details, never commit
+.wrangler/
+worker/.wrangler/
+
+# Node
+node_modules/

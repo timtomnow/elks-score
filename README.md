@@ -30,10 +30,36 @@ A lightweight web app for tracking the Edmonton Elks and the rest of the CFL —
 
 This app reads the same public JSON feed that powers the live scoreboard widget on **cfl.ca** (provided via Genius Sports):
 
-- `https://cflscoreboard.cfl.ca/json/scoreboard/squads.json` — teams and records
-- `https://cflscoreboard.cfl.ca/json/scoreboard/rounds.json` — schedule, live scores, and game state
+- `…/json/scoreboard/squads.json` — teams and records
+- `…/json/scoreboard/rounds.json` — schedule, live scores, and game state
 
 These are undocumented, unofficial endpoints with no published usage terms — great for a personal app, but they can change without notice. Deeper stats (box scores, play-by-play) are not in this feed; the app links out to CFL's official Game Tracker for those.
+
+### Why a proxy is required
+
+The upstream feed (`cflscoreboard.cfl.ca`) sends **no CORS headers**, so a browser will refuse to fetch it from any origin other than cfl.ca itself. To get around this, the app talks to a small **Cloudflare Worker** that fetches the feed server-side and re-serves it with CORS headers and short edge-cache TTLs. (Same pattern as the `oilers-score` repo.)
+
+## Setup
+
+### 1. Deploy the worker
+
+```bash
+cd worker
+npx wrangler login      # opens the browser to authorize your Cloudflare account
+npx wrangler deploy
+```
+
+This publishes `elks-score-proxy` to `https://elks-score-proxy.<your-subdomain>.workers.dev`.
+
+Rate limiting via Workers KV is **optional** and off by default — the worker runs fine without it. To enable a daily request cap, follow the commented instructions in [`worker/wrangler.toml`](worker/wrangler.toml).
+
+### 2. Point the app at your worker
+
+Edit [`config.js`](config.js) and set `CFL_API_BASE` to your deployed worker URL (the default assumes the `oilers-score-proxy` workers.dev subdomain). The team can be changed there too.
+
+### 3. Serve the app
+
+It's a static site — host the repo root anywhere (e.g. GitHub Pages). Opening `index.html` directly via `file://` will **not** work (browser blocks `fetch` from `null` origin); use a real server such as `python3 -m http.server` for local testing.
 
 ## Roadmap
 
@@ -42,7 +68,7 @@ These are undocumented, unofficial endpoints with no published usage terms — g
 
 ## Tech
 
-A single static `index.html` — no build step, no dependencies, no API keys. Just open it or host it anywhere (e.g. GitHub Pages).
+A static front end (`index.html` + `config.js`) — no build step, no framework, no API keys — plus a ~150-line Cloudflare Worker that proxies the CFL feed. Host the front end anywhere; the worker runs free on Cloudflare's edge.
 
 ## Disclaimer
 
