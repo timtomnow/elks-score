@@ -69,10 +69,41 @@
     .clock-row .period { color: var(--green2); }
 
     /* ── Game meta / link ── */
-    .game-link { display: block; text-align: center; color: var(--green2); font-size: 13px; font-weight: 700; padding: 12px 0 2px; text-decoration: none; -webkit-tap-highlight-color: transparent; }
-    .game-link:active { opacity: .6; }
     .game-time { text-align: center; font-size: 15px; font-weight: 600; color: #333; }
     .game-sub  { text-align: center; font-size: 12px; color: #aaa; margin-top: 3px; }
+
+    /* ── Expandable game details ── */
+    .game-details { border-top: 1px solid #f2f2f2; }
+    .game-details summary { list-style: none; cursor: pointer; padding: 11px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #999; display: flex; align-items: center; justify-content: space-between; -webkit-tap-highlight-color: transparent; }
+    .game-details summary::-webkit-details-marker { display: none; }
+    .game-details summary::after { content: '›'; color: #ccc; font-size: 17px; transition: transform .2s; }
+    .game-details[open] summary::after { transform: rotate(90deg); }
+    .gd-body { padding: 0 16px 12px; }
+    .gd-row { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; padding: 6px 0; border-top: 1px solid #f7f7f7; }
+    .gd-row:first-child { border-top: none; }
+    .gd-k { color: #aaa; }
+    .gd-v { color: #444; font-weight: 600; text-align: right; }
+
+    /* ── CFL.ca source link ── */
+    .cfl-link { display: flex; align-items: center; gap: 10px; background: #f7f7f9; border-radius: 12px; padding: 11px 13px; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+    .cfl-link:active { background: #ececf0; }
+    .cfl-mark { font-size: 11px; font-weight: 800; color: #fff; background: var(--green2); border-radius: 6px; padding: 3px 7px; letter-spacing: .2px; flex-shrink: 0; }
+    .cfl-text { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+    .cfl-text b { font-size: 13px; font-weight: 700; color: #1c1c1e; }
+    .cfl-text span { font-size: 11px; color: #999; }
+    .cfl-arrow { margin-left: auto; color: #c4c4c4; font-size: 15px; flex-shrink: 0; }
+
+    /* ── Recent results ── */
+    .res-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid #f2f2f2; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+    .sec-title + .res-row { border-top: none; }
+    .res-row:active { background: #fafafa; }
+    .res-badge { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; font-size: 10px; font-weight: 800; color: #fff; display: flex; align-items: center; justify-content: center; }
+    .res-w { background: var(--green2); }
+    .res-l { background: #cfcfcf; }
+    .res-t { background: #b8b8b8; }
+    .res-main { flex: 1; min-width: 0; }
+    .res-line { display: flex; align-items: center; gap: 5px; }
+    .res-sub  { font-size: 10px; color: #aaa; margin-top: 2px; }
 
     /* ── Standings ── */
     .st-table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -158,6 +189,7 @@
   <div id="game-section"><div class="card"><div class="loading">Loading…</div></div></div>
   <div id="standings-section"></div>
   <div id="scoreboard-section"></div>
+  <div id="results-section"></div>
   <div id="upcoming-section"></div>
 
   <div class="footer">
@@ -229,8 +261,43 @@
     const slug = name => (name || '').toLowerCase().replaceAll(' ', '-');
     const home = slug(g.homeSquad?.name);
     const away = slug(g.awaySquad?.name);
-    const state = isLive(g) ? '#gametracker' : '#preview';
+    const state = isLive(g) ? '#gametracker' : isComplete(g) ? '#boxscore' : '#preview';
     return `https://www.cfl.ca/games/${g.cflId}/${home}-vs-${away}/${state}`;
+  }
+
+  // Branded link out to the official CFL.ca game page — makes it obvious that
+  // deeper stats (box score, play-by-play) live on cfl.ca, not in this app.
+  function cflLink(g) {
+    const href = gameTrackerLink(g);
+    if (!href) return '';
+    let label = 'Game Preview', sub = 'Matchup & preview on CFL.ca';
+    if (isLive(g))          { label = 'Live Game Tracker'; sub = 'Live stats & play-by-play on CFL.ca'; }
+    else if (isComplete(g)) { label = 'Box Score & Recap'; sub = 'Full stats & recap on CFL.ca'; }
+    return `<a class="cfl-link" href="${href}" target="_blank" rel="noopener">
+      <span class="cfl-mark">CFL.ca</span>
+      <span class="cfl-text"><b>${label}</b><span>${sub}</span></span>
+      <span class="cfl-arrow">↗</span>
+    </a>`;
+  }
+
+  // Expandable details block surfacing the extra data the feed provides
+  // (round/pre-season label, kickoff, and live timeouts) — no betting data.
+  function gameDetails(g) {
+    const rows = [];
+    if (g._round?.name) rows.push(['Round', g._round.name]);
+    rows.push([
+      isComplete(g) ? 'Played' : 'Kickoff',
+      `${fmtDate(g.date, { weekday: 'short', month: 'short', day: 'numeric' })} · ${fmtTime(g.date)}`,
+    ]);
+    if (isLive(g) && g.timeouts) {
+      const to = n => n ?? '—';
+      rows.push(['Timeouts left', `${g.awaySquad.shortName} ${to(g.timeouts.away)} · ${g.homeSquad.shortName} ${to(g.timeouts.home)}`]);
+    }
+    if (!rows.length) return '';
+    const body = rows
+      .map(([k, v]) => `<div class="gd-row"><span class="gd-k">${k}</span><span class="gd-v">${v}</span></div>`)
+      .join('');
+    return `<details class="game-details"><summary>Game details</summary><div class="gd-body">${body}</div></details>`;
   }
 
   // ── API ───────────────────────────────────────────────────────────────────
@@ -352,12 +419,11 @@
     }
     html += `</div>`;
 
-    const link = gameTrackerLink(g);
+    html += gameDetails(g);
+
+    const link = cflLink(g);
     if (link) {
-      const label = live ? 'Live Game Tracker →' : final ? 'Game Stats & Recap →' : 'Game Preview →';
-      html += `<div class="sec" style="padding-top:10px;padding-bottom:12px">
-        <a class="game-link" href="${link}" target="_blank" rel="noopener">${label}</a>
-      </div>`;
+      html += `<div class="sec" style="padding:12px 16px;border-top:1px solid #f2f2f2">${link}</div>`;
     }
 
     return `<div class="card">${html}</div>`;
@@ -468,6 +534,43 @@
     </div></div>`;
   }
 
+  // ── Recent Elks results (includes pre-season) ────────────────────────────
+  function renderResults(games) {
+    const past = games
+      .filter(g => involvesElks(g) && isComplete(g))
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 5);
+    if (!past.length) return '';
+    const rows = past.map(g => {
+      const aw = g.awaySquad, hm = g.homeSquad;
+      const awWon = g.winner === aw.id, hmWon = g.winner === hm.id;
+      let res = 'T', resCls = 'res-t';
+      if (g.winner === ELKS_ID)      { res = 'W'; resCls = 'res-w'; }
+      else if (g.winner != null)     { res = 'L'; resCls = 'res-l'; }
+      const link = gameTrackerLink(g);
+      const tag = link ? 'a' : 'div';
+      const href = link ? ` href="${link}" target="_blank" rel="noopener"` : '';
+      return `<${tag} class="res-row"${href}>
+        <span class="res-badge ${resCls}">${res}</span>
+        <div class="res-main">
+          <div class="res-line">
+            <span class="og-team${aw.id === ELKS_ID ? ' elks' : ''}">${aw.shortName}</span>
+            <span class="og-score ${awWon ? '' : 'dim'}">${aw.score ?? 0}</span>
+            <span class="og-dash">–</span>
+            <span class="og-score ${hmWon ? '' : 'dim'}">${hm.score ?? 0}</span>
+            <span class="og-team${hm.id === ELKS_ID ? ' elks' : ''}">${hm.shortName}</span>
+          </div>
+          <div class="res-sub">${g._round?.name || ''} · ${fmtDate(g.date, { month: 'short', day: 'numeric' })}</div>
+        </div>
+        ${link ? '<span class="og-chev">›</span>' : ''}
+      </${tag}>`;
+    }).join('');
+    return `<div class="card"><div class="sec">
+      <div class="sec-title">Recent Elks Results</div>
+      ${rows}
+    </div></div>`;
+  }
+
   // ── Main load ─────────────────────────────────────────────────────────────
   async function load() {
     const gameEl = document.getElementById('game-section');
@@ -486,6 +589,7 @@
       gameEl.innerHTML = renderFeatured(featuredElksGame(games));
       document.getElementById('standings-section').innerHTML = renderStandings();
       document.getElementById('scoreboard-section').innerHTML = renderScoreboard(activeRound(rounds));
+      document.getElementById('results-section').innerHTML = renderResults(games);
       document.getElementById('upcoming-section').innerHTML = renderUpcoming(games);
 
       document.getElementById('updated').textContent =

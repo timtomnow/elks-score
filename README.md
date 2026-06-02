@@ -11,7 +11,12 @@ A lightweight web app for tracking the Edmonton Elks and the rest of the CFL —
 - Live score with quarter and game clock
 - Possession indicator (gold dot beside the team with the ball)
 - Team records (W–L–T)
-- One tap to the official CFL Game Tracker / preview / recap
+- Expandable **Game details**: round / pre-season label, kickoff time, and timeouts remaining while live
+- A clearly branded **CFL.ca** button linking to the official box score, live game tracker, or preview for deeper stats
+
+**Recent Elks results**
+- The last few completed Elks games, **including pre-season**, with final score, win/loss tag, round, and date
+- Each result links to its CFL.ca box score
 
 **CFL standings**
 - West and East divisions, sorted by points (CFL scoring: win = 2, tie = 1, loss = 0)
@@ -66,7 +71,8 @@ It's a static site — host the repo root anywhere (e.g. GitHub Pages). Opening 
 ## Roadmap
 
 - **Tier 1 (done):** live scores, standings, weekly scoreboard, links to official game stats
-- **Tier 2 (later):** serve box scores / player stats inline (requires scraping CFL's stats pages or a licensed Genius Sports feed)
+- **Tier 1.5 (done):** recent results including pre-season, expandable game details (round, kickoff, live timeouts), and clearly branded CFL.ca links — surfacing everything the public scoreboard feed actually exposes
+- **Tier 2 (later):** full box scores / player stats / play-by-play inline. **Not available from the public scoreboard feed** (it carries summary data only, and the old official `api.cfl.ca` is gone), so this would require scraping CFL's gametracker pages — fragile and out of scope for now. The app links out to CFL.ca for these instead.
 
 ## Tech
 
