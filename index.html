@@ -209,27 +209,53 @@
     .copyright { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 11px; color: rgba(255,255,255,.3); margin-top: 8px; }
     .copyright a { color: rgba(255,255,255,.7); text-decoration: underline; text-underline-offset: 2px; }
     .copyright a:hover { color: #fff; }
-    .help-btn { background: none; color: rgba(255,255,255,.4); border: 1px solid rgba(255,255,255,.2); width: 18px; height: 18px; border-radius: 50%; font-size: 10px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
-    .help-btn:active { color: #fff; border-color: rgba(255,255,255,.5); }
+    .settings-btn { background: none; color: rgba(255,255,255,.4); border: none; padding: 2px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; line-height: 0; }
+    .settings-btn:active { color: #fff; }
 
-    /* ── README overlay ── */
-    #readme-bd { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:300; opacity:0; pointer-events:none; transition:opacity .25s; }
-    #readme-bd.open { opacity:1; pointer-events:auto; }
-    #readme-sh { position:fixed; left:0; right:0; bottom:0; z-index:301; background:#fff; border-radius:20px 20px 0 0; max-height:90vh; display:flex; flex-direction:column; transform:translateY(102%); transition:transform .3s cubic-bezier(.25,.46,.45,.94); box-shadow:0 -8px 32px rgba(0,0,0,.2); }
-    #readme-sh.open { transform:translateY(0); }
+    /* ── Settings overlay ── */
+    #set-bd { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:300; opacity:0; pointer-events:none; transition:opacity .25s; }
+    #set-bd.open { opacity:1; pointer-events:auto; }
+    #set-sh { position:fixed; left:0; right:0; bottom:0; z-index:301; background:#f2f2f7; border-radius:20px 20px 0 0; max-height:90vh; display:flex; flex-direction:column; transform:translateY(102%); transition:transform .3s cubic-bezier(.25,.46,.45,.94); box-shadow:0 -8px 32px rgba(0,0,0,.2); }
+    #set-sh.open { transform:translateY(0); }
     .ov-handle { width:36px; height:4px; background:#e0e0e0; border-radius:2px; margin:10px auto 0; flex-shrink:0; }
-    .readme-head { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-bottom:1px solid #f0f0f0; flex-shrink:0; }
-    .readme-title { font-size:15px; font-weight:700; color:#1c1c1e; }
-    .readme-close { background:none; border:none; font-size:24px; color:#bbb; cursor:pointer; line-height:1; padding:0 0 2px 16px; }
-    .readme-body { overflow-y:auto; flex:1; padding:16px; -webkit-overflow-scrolling:touch; line-height:1.6; font-size:13px; color:#444; }
-    .readme-body h1 { font-size:18px; font-weight:800; color:var(--green); margin:0 0 12px; }
-    .readme-body h2 { font-size:14px; font-weight:700; color:#1c1c1e; margin:16px 0 6px; border-bottom:1px solid #f0f0f0; padding-bottom:4px; }
-    .readme-body p { margin:0 0 8px; }
-    .readme-body ul { padding-left:18px; margin:0 0 8px; }
-    .readme-body li { margin-bottom:3px; }
-    .readme-body a { color:var(--green); }
-    .readme-body strong { color:#1c1c1e; }
-    .readme-body code { background:#f5f5f7; border-radius:4px; padding:1px 5px; font-size:12px; }
+    .set-head { display:flex; align-items:center; gap:8px; padding:10px 16px; border-bottom:1px solid #e4e4ea; flex-shrink:0; }
+    .set-back { background:none; border:none; font-size:14px; font-weight:600; color:var(--green); cursor:pointer; padding:0; line-height:1; }
+    .set-title { font-size:15px; font-weight:700; color:#1c1c1e; flex:1; }
+    .set-close { background:none; border:none; font-size:24px; color:#bbb; cursor:pointer; line-height:1; padding:0 0 2px 8px; }
+    .set-body { overflow-y:auto; flex:1; padding:14px; -webkit-overflow-scrolling:touch; }
+
+    /* Cards */
+    .set-card { background:#fff; border-radius:14px; padding:16px; margin-bottom:14px; }
+    .set-card:last-child { margin-bottom:0; }
+    .set-card-title { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; color:#8a8a8e; margin:0 0 12px; }
+    .set-app-name { font-size:16px; font-weight:700; color:#1c1c1e; margin-bottom:6px; }
+    .set-desc { font-size:13px; line-height:1.5; color:#666; margin-bottom:14px; }
+    .set-links { display:flex; flex-direction:column; gap:10px; }
+    .set-link { display:inline-flex; align-items:center; gap:7px; color:#1c1c1e; text-decoration:none; font-weight:600; font-size:13.5px; width:fit-content; }
+    .set-link.accent { color:var(--green); }
+    .set-copy { margin-top:14px; padding-top:12px; border-top:1px solid #f0f0f0; font-size:12px; color:#aaa; }
+
+    /* Help index */
+    .help-cat { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--gold); margin:14px 0 4px; }
+    .help-cat:first-child { margin-top:0; }
+    .help-item { display:block; padding:10px 0; border-top:1px solid #f3f3f5; text-decoration:none; cursor:pointer; }
+    .help-item:first-of-type { border-top:none; }
+    .help-item-title { font-size:14px; font-weight:600; color:#1c1c1e; }
+    .help-item-title::after { content:'›'; float:right; color:#ccc; font-weight:700; }
+    .help-item-sum { font-size:12px; color:#888; margin-top:2px; line-height:1.4; }
+    .help-empty { font-size:13px; color:#999; line-height:1.5; }
+
+    /* Guide (process) view */
+    .guide-body { font-size:13px; line-height:1.6; color:#444; }
+    .guide-body h1 { font-size:18px; font-weight:800; color:var(--green); margin:0 0 12px; }
+    .guide-body h2 { font-size:14px; font-weight:700; color:#1c1c1e; margin:16px 0 6px; border-bottom:1px solid #f0f0f0; padding-bottom:4px; }
+    .guide-body h3 { font-size:13px; font-weight:700; color:#1c1c1e; margin:12px 0 4px; }
+    .guide-body p { margin:0 0 8px; }
+    .guide-body ul, .guide-body ol { padding-left:20px; margin:0 0 8px; }
+    .guide-body li { margin-bottom:4px; }
+    .guide-body a { color:var(--green); }
+    .guide-body strong { color:#1c1c1e; }
+    .guide-body code { background:#f5f5f7; border-radius:4px; padding:1px 5px; font-size:12px; }
 
     /* ── States ── */
     .loading { color: #aaa; font-size: 14px; text-align: center; padding: 28px; }
@@ -260,19 +286,25 @@
     <p class="updated" id="updated"></p>
     <p class="copyright">
       © 2026 <a href="https://github.com/timtomnow/elks-score" target="_blank" rel="noopener">timtomnow</a>
-      <button class="help-btn" onclick="openReadme()" aria-label="About this app">?</button>
+      <button class="settings-btn" onclick="openSettings()" aria-label="Settings">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
     </p>
   </div>
 </div>
 
-<div id="readme-bd" onclick="closeReadme()"></div>
-<div id="readme-sh">
+<div id="set-bd" onclick="closeSettings()"></div>
+<div id="set-sh">
   <div class="ov-handle"></div>
-  <div class="readme-head">
-    <div class="readme-title">About this app</div>
-    <button class="readme-close" onclick="closeReadme()">&#x2715;</button>
+  <div class="set-head">
+    <button class="set-back" id="set-back" onclick="renderSettingsHome()" hidden>&#x2039; Back</button>
+    <div class="set-title" id="set-title">Settings</div>
+    <button class="set-close" onclick="closeSettings()" aria-label="Close">&#x2715;</button>
   </div>
-  <div class="readme-body" id="readme-body"><div class="loading">Loading…</div></div>
+  <div class="set-body" id="set-body"></div>
 </div>
 
 <div id="gm-bd" onclick="closeGameModal()"></div>
@@ -1089,65 +1121,161 @@
 
   function manualRefresh() { load(); }
 
-  // ── README overlay ────────────────────────────────────────────────────────
-  function githubRawUrl() {
-    const { hostname, pathname } = window.location;
-    if (hostname.endsWith('.github.io')) {
-      const user = hostname.replace('.github.io', '');
-      const repo = pathname.split('/').filter(Boolean)[0] ?? '';
-      if (repo) return `https://raw.githubusercontent.com/${user}/${repo}/main/README.md`;
-    }
-    return null;
-  }
+  // ── Settings overlay (About + in-app Help) ──────────────────────────────────
+  // The Help section reads ttn-docs guides from docs/help/: an index.json listing
+  // guide slugs, plus one Markdown file per slug with `title / category / order /
+  // summary` frontmatter. Drop new guides there (e.g. via the ttn-docs skill) and
+  // they appear automatically — no code change needed.
 
-  function parseMarkdown(md) {
-    return md
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+  // Lightweight Markdown renderer for guide bodies. Internal /help/<slug> links
+  // are tagged so clicks navigate within the Help section instead of the browser.
+  function renderGuideMarkdown(md) {
+    const inline = t => esc(t)
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/`([^`]+)`/g, '<code>$1</code>')
-      .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
-      .replace(/^- (.+)$/gm, '<li>$1</li>')
-      .replace(/(<li>[\s\S]*?<\/li>)(\n(?!<li>))/g, '<ul>$1</ul>\n')
-      .replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`)
-      .replace(/\n\n+/g, '</p><p>')
-      .replace(/^(?!<[hup])/gm, '')
-      .replace(/<\/ul><ul>/g, '')
-      .replace(/(<p>|<\/p>)+/g, m => m.length > 4 ? '<p>' : m);
-  }
-
-  async function openReadme() {
-    document.getElementById('readme-bd').classList.add('open');
-    document.getElementById('readme-sh').classList.add('open');
-    document.body.style.overflow = 'hidden';
-    const bodyEl = document.getElementById('readme-body');
-    bodyEl.innerHTML = '<div class="loading">Loading…</div>';
-    try {
-      let md = null;
-      try {
-        const r = await fetch('./README.md');
-        if (r.ok) md = await r.text();
-      } catch(_) {}
-      if (!md) {
-        const fallback = githubRawUrl();
-        if (!fallback) throw new Error('README could not be loaded');
-        const r = await fetch(fallback);
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        md = await r.text();
-      }
-      bodyEl.innerHTML = parseMarkdown(md);
-    } catch(e) {
-      bodyEl.innerHTML = `<div class="err">Could not load README.<br>${e.message}</div>`;
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, txt, href) => {
+        const help = href.match(/^\/help\/(.+)$/);
+        if (help) return `<a href="#" data-help="${esc(help[1])}">${txt}</a>`;
+        return `<a href="${esc(href)}" target="_blank" rel="noopener">${txt}</a>`;
+      });
+    const lines = md.split('\n');
+    let html = '', list = null;
+    const closeList = () => { if (list) { html += `</${list}>`; list = null; } };
+    for (const raw of lines) {
+      const line = raw.trimEnd();
+      let m;
+      if (/^###\s+/.test(line))                  { closeList(); html += `<h3>${inline(line.slice(4))}</h3>`; }
+      else if (/^##\s+/.test(line))              { closeList(); html += `<h2>${inline(line.slice(3))}</h2>`; }
+      else if (/^#\s+/.test(line))               { closeList(); html += `<h1>${inline(line.slice(2))}</h1>`; }
+      else if ((m = line.match(/^\d+\.\s+(.*)/))) { if (list !== 'ol') { closeList(); html += '<ol>'; list = 'ol'; } html += `<li>${inline(m[1])}</li>`; }
+      else if ((m = line.match(/^[-*]\s+(.*)/)))  { if (list !== 'ul') { closeList(); html += '<ul>'; list = 'ul'; } html += `<li>${inline(m[1])}</li>`; }
+      else if (line.trim() === '')                { closeList(); }
+      else                                        { closeList(); html += `<p>${inline(line)}</p>`; }
     }
+    closeList();
+    return html;
   }
 
-  function closeReadme() {
-    document.getElementById('readme-bd').classList.remove('open');
-    document.getElementById('readme-sh').classList.remove('open');
+  function parseGuide(slug, text) {
+    const m = text.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+    const fm = {};
+    let body = text;
+    if (m) {
+      body = m[2];
+      for (const l of m[1].split('\n')) {
+        const i = l.indexOf(':');
+        if (i > 0) fm[l.slice(0, i).trim()] = l.slice(i + 1).trim().replace(/^["']|["']$/g, '');
+      }
+    }
+    return {
+      slug,
+      title: fm.title || slug,
+      category: fm.category || 'Help',
+      order: parseInt(fm.order, 10) || 999,
+      summary: fm.summary || '',
+      body,
+    };
+  }
+
+  let _guides = null;   // cached after first load: array of parsed guides, or [] if none
+  async function loadGuides() {
+    if (_guides) return _guides;
+    try {
+      const r = await fetch('./docs/help/index.json');
+      if (!r.ok) throw new Error('no index');
+      const slugs = await r.json();
+      const guides = await Promise.all(slugs.map(async slug => {
+        try {
+          const gr = await fetch(`./docs/help/${slug}.md`);
+          if (!gr.ok) return null;
+          return parseGuide(slug, await gr.text());
+        } catch { return null; }
+      }));
+      // Known categories lead in this order; anything else falls back to alphabetical.
+      const CAT_RANK = ['Getting started', 'Game stats'];
+      const rank = c => { const i = CAT_RANK.indexOf(c); return i === -1 ? CAT_RANK.length : i; };
+      _guides = guides.filter(Boolean).sort((a, b) =>
+        rank(a.category) - rank(b.category) ||
+        a.category.localeCompare(b.category) ||
+        a.order - b.order);
+    } catch {
+      _guides = [];
+    }
+    return _guides;
+  }
+
+  function aboutCardHtml() {
+    const octocat = '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style="flex-shrink:0"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>';
+    return `
+      <div class="set-card">
+        <div class="set-card-title">About</div>
+        <div class="set-app-name">Elks Score</div>
+        <div class="set-desc">A lightweight tracker for the Edmonton Elks and the rest of the CFL — live scores, division standings, the weekly scoreboard, and inline team &amp; player box scores. Installable as a home-screen app.</div>
+        <div class="set-links">
+          <a class="set-link" href="https://github.com/timtomnow/elks-score" target="_blank" rel="noopener">${octocat}<span>github.com/timtomnow/elks-score</span></a>
+          <a class="set-link accent" href="https://timtomnow.github.io/app-portfolio/" target="_blank" rel="noopener">Check out my other apps on the portfolio site →</a>
+        </div>
+        <div class="set-copy">© ${new Date().getFullYear()} timtomnow · not affiliated with the CFL or the Edmonton Elks</div>
+      </div>`;
+  }
+
+  function helpCardHtml(guides) {
+    let inner;
+    if (!guides.length) {
+      inner = '<div class="help-empty">No help guides have been published yet. Check back soon.</div>';
+    } else {
+      let lastCat = null;
+      inner = guides.map(g => {
+        const head = g.category !== lastCat ? (lastCat = g.category, `<div class="help-cat">${esc(g.category)}</div>`) : '';
+        return `${head}<a class="help-item" href="#" data-help="${esc(g.slug)}">
+          <div class="help-item-title">${esc(g.title)}</div>
+          ${g.summary ? `<div class="help-item-sum">${esc(g.summary)}</div>` : ''}
+        </a>`;
+      }).join('');
+    }
+    return `<div class="set-card"><div class="set-card-title">Help guide</div>${inner}</div>`;
+  }
+
+  async function renderSettingsHome() {
+    document.getElementById('set-title').textContent = 'Settings';
+    document.getElementById('set-back').hidden = true;
+    const body = document.getElementById('set-body');
+    body.innerHTML = aboutCardHtml() + `<div class="set-card"><div class="set-card-title">Help guide</div><div class="loading">Loading…</div></div>`;
+    const guides = await loadGuides();
+    body.innerHTML = aboutCardHtml() + helpCardHtml(guides);
+  }
+
+  async function showGuide(slug) {
+    const guides = await loadGuides();
+    const g = guides.find(x => x.slug === slug);
+    if (!g) return renderSettingsHome();
+    document.getElementById('set-title').textContent = g.title;
+    document.getElementById('set-back').hidden = false;
+    document.getElementById('set-body').innerHTML =
+      `<div class="set-card"><div class="guide-body">${renderGuideMarkdown(g.body)}</div></div>`;
+    document.getElementById('set-body').scrollTop = 0;
+  }
+
+  function openSettings() {
+    document.getElementById('set-bd').classList.add('open');
+    document.getElementById('set-sh').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    renderSettingsHome();
+  }
+
+  function closeSettings() {
+    document.getElementById('set-bd').classList.remove('open');
+    document.getElementById('set-sh').classList.remove('open');
     document.body.style.overflow = '';
   }
+
+  // Intercept in-app help links (guide list items and cross-links inside guides).
+  document.getElementById('set-body').addEventListener('click', (e) => {
+    const link = e.target.closest('[data-help]');
+    if (!link) return;
+    e.preventDefault();
+    showGuide(link.getAttribute('data-help'));
+  });
 
   // Self-rescheduling refresh: 30 s when a game is live, otherwise 5 min
   function scheduleRefresh() {

@@ -8,7 +8,7 @@
 //
 // Bump CACHE_VERSION whenever the shell files below change, so old caches are
 // dropped on the next visit.
-const CACHE_VERSION = 'elks-score-v1';
+const CACHE_VERSION = 'elks-score-v2';
 const SHELL = [
   './',
   './index.html',
@@ -17,6 +17,11 @@ const SHELL = [
   './icon.svg',
   './icon-192.png',
   './icon-512.png',
+  './docs/help/index.json',
+  './docs/help/getting-around.md',
+  './docs/help/install-app.md',
+  './docs/help/open-box-score.md',
+  './docs/help/filter-play-by-play.md',
 ];
 
 self.addEventListener('install', (event) => {
