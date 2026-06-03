@@ -236,20 +236,48 @@
     .set-copy { margin-top:14px; padding-top:12px; border-top:1px solid #f0f0f0; font-size:12px; color:#aaa; }
 
     /* Help index */
-    .help-cat { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--gold); margin:14px 0 4px; }
-    .help-cat:first-child { margin-top:0; }
+    .help-card-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+    .help-viewall { font-size:12px; font-weight:700; color:var(--green); text-decoration:none; }
+    .help-cat-link { display:flex; align-items:center; gap:4px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--gold); text-decoration:none; margin:16px 0 4px; }
+    .help-cat-link:first-of-type { margin-top:10px; }
     .help-item { display:block; padding:10px 0; border-top:1px solid #f3f3f5; text-decoration:none; cursor:pointer; }
-    .help-item:first-of-type { border-top:none; }
     .help-item-title { font-size:14px; font-weight:600; color:#1c1c1e; }
     .help-item-title::after { content:'›'; float:right; color:#ccc; font-weight:700; }
     .help-item-sum { font-size:12px; color:#888; margin-top:2px; line-height:1.4; }
     .help-empty { font-size:13px; color:#999; line-height:1.5; }
 
-    /* Guide (process) view */
+    /* Breadcrumbs */
+    .bc { display:flex; flex-wrap:wrap; align-items:center; gap:5px; font-size:12px; color:#999; margin:0 2px 12px; }
+    .bc a { color:#666; font-weight:600; text-decoration:none; }
+    .bc-cur { color:#1c1c1e; font-weight:600; }
+    .bc-sep { color:#ccc; }
+
+    /* Table of contents box */
+    .toc-box { background:#f7f7f9; border:1px solid #ececf0; border-radius:12px; padding:12px 14px; margin-bottom:16px; }
+    .toc-title { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:#9a9aa0; margin-bottom:6px; }
+    .toc-box ul { list-style:none; margin:0; padding:0; }
+    .toc-box li { margin:2px 0; }
+    .toc-box a { display:block; font-size:13px; color:#555; text-decoration:none; padding:2px 0; }
+    .toc-box a.toc-sec { font-size:13px; font-weight:800; color:#1c1c1e; margin-top:6px; }
+    .toc-box a.toc-guide { font-weight:600; color:#333; }
+    .toc-steps { border-left:1px solid #e4e4ea; margin:2px 0 6px 4px !important; padding-left:8px !important; }
+    .toc-steps a { font-size:12px; color:#888; }
+    .toc-sub { padding-left:10px !important; }
+
+    /* Section / full-docs headers */
+    .docs-sec { margin-top:20px; }
+    .docs-sec-title { font-size:18px; font-weight:800; color:var(--green); border-bottom:1px solid #eee; padding-bottom:6px; margin:0 0 14px; }
+    .guide-sec { margin-top:18px; }
+    .guide-sec + .guide-sec, .docs-sec .guide-sec { border-top:1px solid #f2f2f2; padding-top:16px; }
+    .guide-sec-title { font-size:15px; font-weight:800; color:#1c1c1e; margin:0 0 2px; scroll-margin-top:8px; }
+    .guide-sec-sum { font-size:12px; color:#888; margin:0 0 8px; line-height:1.4; }
+    section[id], article[id] { scroll-margin-top:8px; }
+
+    /* Guide body (process / section / full-docs articles) */
     .guide-body { font-size:13px; line-height:1.6; color:#444; }
     .guide-body h1 { font-size:18px; font-weight:800; color:var(--green); margin:0 0 12px; }
-    .guide-body h2 { font-size:14px; font-weight:700; color:#1c1c1e; margin:16px 0 6px; border-bottom:1px solid #f0f0f0; padding-bottom:4px; }
-    .guide-body h3 { font-size:13px; font-weight:700; color:#1c1c1e; margin:12px 0 4px; }
+    .guide-body h2 { font-size:14px; font-weight:700; color:#1c1c1e; margin:16px 0 6px; border-bottom:1px solid #f0f0f0; padding-bottom:4px; scroll-margin-top:8px; }
+    .guide-body h3 { font-size:13px; font-weight:700; color:#1c1c1e; margin:12px 0 4px; scroll-margin-top:8px; }
     .guide-body p { margin:0 0 8px; }
     .guide-body ul, .guide-body ol { padding-left:20px; margin:0 0 8px; }
     .guide-body li { margin-bottom:4px; }
@@ -1127,9 +1155,31 @@
   // summary` frontmatter. Drop new guides there (e.g. via the ttn-docs skill) and
   // they appear automatically — no code change needed.
 
-  // Lightweight Markdown renderer for guide bodies. Internal /help/<slug> links
-  // are tagged so clicks navigate within the Help section instead of the browser.
-  function renderGuideMarkdown(md) {
+  // Lowercase, dash-separated slug — used for both category ids and heading anchors.
+  function helpSlugify(t) {
+    return String(t).toLowerCase().trim()
+      .replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
+  }
+
+  // Pull ## / ### headings out of a body to build "on this page" / section ToCs.
+  function extractHeadings(body) {
+    const out = [];
+    let fence = false;
+    for (const line of body.split('\n')) {
+      if (/^\s*```/.test(line)) { fence = !fence; continue; }
+      if (fence) continue;
+      const m = /^(#{2,3})\s+(.+?)\s*#*$/.exec(line);
+      if (!m) continue;
+      const text = m[2].trim();
+      out.push({ level: m[1].length, text, id: helpSlugify(text) });
+    }
+    return out;
+  }
+
+  // Lightweight Markdown renderer for guide bodies. Headings get ids (prefixed
+  // with `idPrefix` so several guides can share one page without colliding), and
+  // internal /help/<slug> links are tagged so clicks navigate within the sheet.
+  function renderGuideMarkdown(md, idPrefix = '') {
     const inline = t => esc(t)
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/`([^`]+)`/g, '<code>$1</code>')
@@ -1143,9 +1193,9 @@
     const closeList = () => { if (list) { html += `</${list}>`; list = null; } };
     for (const raw of lines) {
       const line = raw.trimEnd();
-      let m;
-      if (/^###\s+/.test(line))                  { closeList(); html += `<h3>${inline(line.slice(4))}</h3>`; }
-      else if (/^##\s+/.test(line))              { closeList(); html += `<h2>${inline(line.slice(3))}</h2>`; }
+      let m, t;
+      if (/^###\s+/.test(line))                  { t = line.slice(4); closeList(); html += `<h3 id="${idPrefix}${helpSlugify(t)}">${inline(t)}</h3>`; }
+      else if (/^##\s+/.test(line))              { t = line.slice(3); closeList(); html += `<h2 id="${idPrefix}${helpSlugify(t)}">${inline(t)}</h2>`; }
       else if (/^#\s+/.test(line))               { closeList(); html += `<h1>${inline(line.slice(2))}</h1>`; }
       else if ((m = line.match(/^\d+\.\s+(.*)/))) { if (list !== 'ol') { closeList(); html += '<ol>'; list = 'ol'; } html += `<li>${inline(m[1])}</li>`; }
       else if ((m = line.match(/^[-*]\s+(.*)/)))  { if (list !== 'ul') { closeList(); html += '<ul>'; list = 'ul'; } html += `<li>${inline(m[1])}</li>`; }
@@ -1174,7 +1224,18 @@
       order: parseInt(fm.order, 10) || 999,
       summary: fm.summary || '',
       body,
+      headings: extractHeadings(body),
     };
+  }
+
+  // Group the (already-sorted) guides into sections, preserving order.
+  function getGuidesByCategory(guides) {
+    const groups = new Map();
+    for (const g of guides) {
+      if (!groups.has(g.category)) groups.set(g.category, []);
+      groups.get(g.category).push(g);
+    }
+    return [...groups.entries()].map(([category, gs]) => ({ category, slug: helpSlugify(category), guides: gs }));
   }
 
   let _guides = null;   // cached after first load: array of parsed guides, or [] if none
@@ -1219,41 +1280,127 @@
       </div>`;
   }
 
+  // ── Help: shared view fragments ─────────────────────────────────────────────
+  function breadcrumbsHtml(items) {
+    return `<nav class="bc">` + items.map((it, i) => {
+      const sep = i > 0 ? '<span class="bc-sep">›</span>' : '';
+      return it.current
+        ? `${sep}<span class="bc-cur">${esc(it.label)}</span>`
+        : `${sep}<a href="#" ${it.attr}>${esc(it.label)}</a>`;
+    }).join('') + `</nav>`;
+  }
+
+  // The step-level (heading) list for one guide, anchoring into `idPrefix`.
+  function guideStepsHtml(guide, idPrefix) {
+    if (!guide.headings.length) return '';
+    return `<ul class="toc-steps">` + guide.headings.map(h =>
+      `<li style="padding-left:${(h.level - 2) * 12}px"><a href="#${idPrefix}${h.id}">${esc(h.text)}</a></li>`
+    ).join('') + `</ul>`;
+  }
+
+  const tocBoxHtml = (title, inner) => `<div class="toc-box"><div class="toc-title">${esc(title)}</div>${inner}</div>`;
+
+  // Markup for one guide rendered inline on a multi-guide page (section / docs).
+  function guideArticleHtml(g, tag) {
+    return `<${tag} id="${g.slug}" class="guide-sec">
+      <div class="guide-sec-title">${esc(g.title)}</div>
+      ${g.summary ? `<div class="guide-sec-sum">${esc(g.summary)}</div>` : ''}
+      <div class="guide-body">${renderGuideMarkdown(g.body, g.slug + '--')}</div>
+    </${tag}>`;
+  }
+
+  // ── Help: the index card (lives on the Settings home, beside About) ─────────
   function helpCardHtml(guides) {
-    let inner;
     if (!guides.length) {
-      inner = '<div class="help-empty">No help guides have been published yet. Check back soon.</div>';
-    } else {
-      let lastCat = null;
-      inner = guides.map(g => {
-        const head = g.category !== lastCat ? (lastCat = g.category, `<div class="help-cat">${esc(g.category)}</div>`) : '';
-        return `${head}<a class="help-item" href="#" data-help="${esc(g.slug)}">
-          <div class="help-item-title">${esc(g.title)}</div>
-          ${g.summary ? `<div class="help-item-sum">${esc(g.summary)}</div>` : ''}
-        </a>`;
-      }).join('');
+      return `<div class="set-card"><div class="set-card-title">Help guide</div>
+        <div class="help-empty">No help guides have been published yet. Check back soon.</div></div>`;
     }
-    return `<div class="set-card"><div class="set-card-title">Help guide</div>${inner}</div>`;
+    const body = getGuidesByCategory(guides).map(s => `
+      <a class="help-cat-link" href="#" data-section="${s.slug}">${esc(s.category)} <span>›</span></a>
+      ${s.guides.map(g => `<a class="help-item" href="#" data-help="${esc(g.slug)}">
+        <div class="help-item-title">${esc(g.title)}</div>
+        ${g.summary ? `<div class="help-item-sum">${esc(g.summary)}</div>` : ''}
+      </a>`).join('')}`).join('');
+    return `<div class="set-card">
+      <div class="help-card-head">
+        <div class="set-card-title" style="margin:0">Help guide</div>
+        <a class="help-viewall" href="#" data-all>View all docs →</a>
+      </div>${body}</div>`;
   }
 
+  // ── Help: the four views ────────────────────────────────────────────────────
+  const setBody = () => document.getElementById('set-body');
+  function setHelpHead(title, showBack) {
+    document.getElementById('set-title').textContent = title;
+    document.getElementById('set-back').hidden = !showBack;
+  }
+
+  // 1. Index — About card + the help index.
   async function renderSettingsHome() {
-    document.getElementById('set-title').textContent = 'Settings';
-    document.getElementById('set-back').hidden = true;
-    const body = document.getElementById('set-body');
-    body.innerHTML = aboutCardHtml() + `<div class="set-card"><div class="set-card-title">Help guide</div><div class="loading">Loading…</div></div>`;
+    setHelpHead('Settings', false);
+    setBody().innerHTML = aboutCardHtml() + `<div class="set-card"><div class="set-card-title">Help guide</div><div class="loading">Loading…</div></div>`;
     const guides = await loadGuides();
-    body.innerHTML = aboutCardHtml() + helpCardHtml(guides);
+    setBody().innerHTML = aboutCardHtml() + helpCardHtml(guides);
+    setBody().scrollTop = 0;
   }
 
+  // 2. Process — one guide, with an "On this page" ToC of its steps.
   async function showGuide(slug) {
     const guides = await loadGuides();
     const g = guides.find(x => x.slug === slug);
     if (!g) return renderSettingsHome();
-    document.getElementById('set-title').textContent = g.title;
-    document.getElementById('set-back').hidden = false;
-    document.getElementById('set-body').innerHTML =
-      `<div class="set-card"><div class="guide-body">${renderGuideMarkdown(g.body)}</div></div>`;
-    document.getElementById('set-body').scrollTop = 0;
+    setHelpHead(g.title, true);
+    const crumbs = breadcrumbsHtml([
+      { label: 'Help', attr: 'data-home' },
+      { label: g.category, attr: `data-section="${helpSlugify(g.category)}"` },
+      { label: g.title, current: true },
+    ]);
+    const toc = g.headings.length ? tocBoxHtml('On this page', guideStepsHtml(g, '')) : '';
+    setBody().innerHTML = `${crumbs}<div class="set-card">${toc}<div class="guide-body">${renderGuideMarkdown(g.body)}</div></div>`;
+    setBody().scrollTop = 0;
+  }
+
+  // 3. Section — every process in one category, on one page.
+  async function showSection(catSlug) {
+    const guides = await loadGuides();
+    const section = getGuidesByCategory(guides).find(s => s.slug === catSlug);
+    if (!section) return renderSettingsHome();
+    setHelpHead(section.category, true);
+    const crumbs = breadcrumbsHtml([
+      { label: 'Help', attr: 'data-home' },
+      { label: section.category, current: true },
+    ]);
+    const toc = tocBoxHtml('In this section', `<ul>` + section.guides.map(g =>
+      `<li><a class="toc-guide" href="#${g.slug}">${esc(g.title)}</a>${guideStepsHtml(g, g.slug + '--')}</li>`
+    ).join('') + `</ul>`);
+    const articles = section.guides.map(g => guideArticleHtml(g, 'section')).join('');
+    setBody().innerHTML = `${crumbs}<div class="set-card">${toc}${articles}</div>`;
+    setBody().scrollTop = 0;
+  }
+
+  // 4. Full docs — the entire manual on one page with a nested contents tree.
+  async function showAll() {
+    const guides = await loadGuides();
+    const sections = getGuidesByCategory(guides);
+    if (!sections.length) return renderSettingsHome();
+    setHelpHead('Full help docs', true);
+    const crumbs = breadcrumbsHtml([
+      { label: 'Help', attr: 'data-home' },
+      { label: 'Full docs', current: true },
+    ]);
+    const contents = tocBoxHtml('Contents', `<ul>` + sections.map(s =>
+      `<li><a class="toc-sec" href="#section-${s.slug}">${esc(s.category)}</a>
+        <ul class="toc-sub">` + s.guides.map(g =>
+          `<li><a class="toc-guide" href="#${g.slug}">${esc(g.title)}</a>${guideStepsHtml(g, g.slug + '--')}</li>`
+        ).join('') + `</ul></li>`
+    ).join('') + `</ul>`);
+    const body = sections.map(s => `
+      <section id="section-${s.slug}" class="docs-sec">
+        <div class="docs-sec-title">${esc(s.category)}</div>
+        ${s.guides.map(g => guideArticleHtml(g, 'article')).join('')}
+      </section>`).join('');
+    setBody().innerHTML = `${crumbs}<div class="set-card">${contents}${body}</div>`;
+    setBody().scrollTop = 0;
   }
 
   function openSettings() {
@@ -1269,12 +1416,20 @@
     document.body.style.overflow = '';
   }
 
-  // Intercept in-app help links (guide list items and cross-links inside guides).
-  document.getElementById('set-body').addEventListener('click', (e) => {
-    const link = e.target.closest('[data-help]');
-    if (!link) return;
-    e.preventDefault();
-    showGuide(link.getAttribute('data-help'));
+  // Delegate clicks inside the sheet: navigate help views, or scroll to an
+  // in-page anchor (the scroll container is the sheet body, not the window).
+  setBody().addEventListener('click', (e) => {
+    const a = e.target.closest('a');
+    if (!a) return;
+    if (a.hasAttribute('data-home'))    { e.preventDefault(); return renderSettingsHome(); }
+    if (a.hasAttribute('data-all'))     { e.preventDefault(); return showAll(); }
+    if (a.hasAttribute('data-section')) { e.preventDefault(); return showSection(a.getAttribute('data-section')); }
+    if (a.hasAttribute('data-help'))    { e.preventDefault(); return showGuide(a.getAttribute('data-help')); }
+    const href = a.getAttribute('href') || '';
+    if (href.length > 1 && href.startsWith('#')) {
+      const el = document.getElementById(decodeURIComponent(href.slice(1)));
+      if (el) { e.preventDefault(); el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    }
   });
 
   // Self-rescheduling refresh: 30 s when a game is live, otherwise 5 min
