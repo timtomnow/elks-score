@@ -94,7 +94,7 @@
     .cfl-arrow { margin-left: auto; color: #c4c4c4; font-size: 15px; flex-shrink: 0; }
 
     /* ── Recent results ── */
-    .res-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid #f2f2f2; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+    .res-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid #f2f2f2; text-decoration: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     .sec-title + .res-row { border-top: none; }
     .res-row:active { background: #fafafa; }
     .res-badge { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; font-size: 10px; font-weight: 800; color: #fff; display: flex; align-items: center; justify-content: center; }
@@ -164,6 +164,42 @@
     .pl-name { font-size: 12px; font-weight: 600; color: #1c1c1e; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .pl-name small { color: #c0c0c0; font-weight: 600; }
     .pl-stat { font-size: 11px; color: #888; flex-shrink: 0; text-align: right; }
+
+    /* Clickable Game Stats card → opens the full box-score modal */
+    .gs-card { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .gs-card:active { background: #fcfcfc; }
+    .gs-more { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 11px; border-top: 1px solid #f2f2f2; font-size: 12px; font-weight: 700; color: var(--green2); }
+    .gs-more::after { content: '›'; color: #ccc; font-size: 17px; }
+
+    /* ── Game modal (full box score: team / player / play-by-play) ── */
+    #gm-bd { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 310; opacity: 0; pointer-events: none; transition: opacity .25s; }
+    #gm-bd.open { opacity: 1; pointer-events: auto; }
+    #gm-sh { position: fixed; left: 0; right: 0; bottom: 0; z-index: 311; background: #fff; border-radius: 20px 20px 0 0; max-height: 92vh; display: flex; flex-direction: column; transform: translateY(102%); transition: transform .3s cubic-bezier(.25,.46,.45,.94); box-shadow: 0 -8px 32px rgba(0,0,0,.2); }
+    #gm-sh.open { transform: translateY(0); }
+    .gm-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px 4px; flex-shrink: 0; }
+    .gm-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #b0b0b0; }
+    .gm-close { background: none; border: none; font-size: 24px; color: #bbb; cursor: pointer; line-height: 1; padding: 0 0 2px 16px; }
+    #gm-score { flex-shrink: 0; padding: 0 16px; }
+    .gm-tabs { display: flex; gap: 5px; padding: 8px 12px 10px; border-bottom: 1px solid #f0f0f0; flex-shrink: 0; }
+    .gm-tab { flex: 1; text-align: center; padding: 9px 4px; font-size: 11px; font-weight: 700; color: #888; background: #f4f4f6; border: none; border-radius: 9px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .gm-tab.active { background: var(--green); color: #fff; }
+    .gm-body { overflow-y: auto; flex: 1; padding: 10px 16px 32px; -webkit-overflow-scrolling: touch; }
+    .gm-body .pl-cat:first-child { margin-top: 4px; }
+
+    /* Play-by-play */
+    .pbp-filters { position: sticky; top: 0; background: #fff; padding: 0 0 10px; z-index: 5; }
+    .pbp-btns { display: flex; gap: 6px; margin-bottom: 6px; }
+    .pbp-btns:last-child { margin-bottom: 0; }
+    .pbp-btn { flex: 1; padding: 7px 4px; font-size: 11px; font-weight: 700; color: #888; background: #f4f4f6; border: 1px solid #ececec; border-radius: 8px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .pbp-btn.on { background: var(--green); color: #fff; border-color: var(--green); }
+    .pbp-q { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; color: var(--gold); margin: 14px 0 2px; padding: 4px 0; }
+    .pbp-q:first-child { margin-top: 0; }
+    .pbp-row { display: flex; gap: 8px; padding: 8px 0; border-top: 1px solid #f5f5f5; align-items: baseline; }
+    .pbp-row.score { background: #fbfaf3; margin: 0 -8px; padding: 8px; border-radius: 8px; border-top: none; }
+    .pbp-clock { font-size: 11px; font-weight: 700; color: #c0c0c0; width: 38px; flex-shrink: 0; }
+    .pbp-team { font-size: 10px; font-weight: 800; width: 28px; flex-shrink: 0; }
+    .pbp-desc { font-size: 12px; color: #555; line-height: 1.4; flex: 1; min-width: 0; }
+    .pbp-row.score .pbp-desc { color: #1c1c1e; font-weight: 600; }
 
     /* ── Footer ── */
     .footer { text-align: center; padding: 4px 0 8px; }
@@ -237,6 +273,18 @@
     <button class="readme-close" onclick="closeReadme()">&#x2715;</button>
   </div>
   <div class="readme-body" id="readme-body"><div class="loading">Loading…</div></div>
+</div>
+
+<div id="gm-bd" onclick="closeGameModal()"></div>
+<div id="gm-sh">
+  <div class="ov-handle"></div>
+  <div class="gm-head">
+    <div class="gm-title" id="gm-title">Box Score</div>
+    <button class="gm-close" onclick="closeGameModal()" aria-label="Close">&#x2715;</button>
+  </div>
+  <div id="gm-score"></div>
+  <div class="gm-tabs" id="gm-tabs"></div>
+  <div class="gm-body" id="gm-body"><div class="loading">Loading…</div></div>
 </div>
 
 <script>
@@ -337,7 +385,8 @@
   const fetchRounds = () => getJSON('rounds.json');
 
   // ── Global state ────────────────────────────────────────────────────────────
-  let SQUADS = {};   // id → squad
+  let SQUADS = {};        // id → squad
+  let GAMES_BY_ID = {};   // fixtureId (string) → game, for the box-score modal
 
   // Flatten every game out of the rounds, tagging each with its round info
   function allGames(rounds) {
@@ -574,10 +623,9 @@
       let res = 'T', resCls = 'res-t';
       if (g.winner === ELKS_ID)      { res = 'W'; resCls = 'res-w'; }
       else if (g.winner != null)     { res = 'L'; resCls = 'res-l'; }
-      const link = gameTrackerLink(g);
-      const tag = link ? 'a' : 'div';
-      const href = link ? ` href="${link}" target="_blank" rel="noopener"` : '';
-      return `<${tag} class="res-row"${href}>
+      // Clicking a result opens the in-app box score (team/player/play-by-play)
+      const open = g.id != null ? ` role="button" tabindex="0" onclick="openGameModal('${g.id}')"` : '';
+      return `<div class="res-row"${open}>
         <span class="res-badge ${resCls}">${res}</span>
         <div class="res-main">
           <div class="res-line">
@@ -589,8 +637,8 @@
           </div>
           <div class="res-sub">${g._round?.name || ''} · ${fmtDate(g.date, { month: 'short', day: 'numeric' })}</div>
         </div>
-        ${link ? '<span class="og-chev">›</span>' : ''}
-      </${tag}>`;
+        ${g.id != null ? '<span class="og-chev">›</span>' : ''}
+      </div>`;
     }).join('');
     return `<div class="card"><div class="sec">
       <div class="sec-title">Recent Elks Results</div>
@@ -720,19 +768,20 @@
     return html;
   }
 
-  function renderGameStats(team, player) {
+  function renderGameStats(team, player, fixtureId) {
     const root = team || player;
     if (!root) return '';
     const info = root.matchInfo, sb = root.scoreboardInfo;
-    const awayAbbr = info?.awayTeam?.details?.abbreviation || info?.awayTeam?.abbreviation || '';
-    const homeAbbr = info?.homeTeam?.details?.abbreviation || info?.homeTeam?.abbreviation || '';
+    const awayAbbr = abbrOf(info?.awayTeam);
+    const homeAbbr = abbrOf(info?.homeTeam);
 
     const teamHtml   = team?.teamStats ? teamStatsHtml(team.teamStats) : '';
     const playerHtml = player?.playerStats ? playerStatsHtml(player.playerStats, awayAbbr, homeAbbr) : '';
     if (!teamHtml && !playerHtml) return '';
 
     const status = sb?.matchStatus === 'PostMatch' ? 'Final' : 'Live';
-    return `<div class="card"><div class="sec">
+    const click = fixtureId != null ? ` class="card gs-card" onclick="openGameModal('${fixtureId}')"` : ' class="card"';
+    return `<div${click}><div class="sec">
       <div class="sec-title">Game Stats</div>
       <div class="gs-score">
         <span class="gs-ab a-clr">${awayAbbr}</span>
@@ -744,6 +793,7 @@
       <div class="gs-sub">${info?.roundName || ''}${info?.roundName ? ' · ' : ''}${status}</div>
       ${teamHtml}
       ${playerHtml}
+      ${fixtureId != null ? '<div class="gs-more">Full box score &amp; play-by-play</div>' : ''}
     </div></div>`;
   }
 
@@ -755,7 +805,253 @@
       <div class="loading" style="padding:18px 0 6px">Loading game stats…</div>
     </div></div>`;
     const [team, player] = await Promise.all([gtFetch(g.id, 'teamStats'), gtFetch(g.id, 'playerStats')]);
-    el.innerHTML = renderGameStats(team, player);   // '' if nothing usable — section just disappears
+    el.innerHTML = renderGameStats(team, player, g.id);   // '' if nothing usable — section just disappears
+  }
+
+  // ── Full game modal: Team Stats / Player Stats / Play-by-Play ───────────────
+  const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const abbrOf = t => t?.details?.abbreviation || t?.abbreviation || '';
+
+  let GM_CACHE = {};        // fixtureId → { team, player, pbp } (completed games only)
+  let GM_DATA = null;       // data for the game currently open (drives paintModal)
+  let GM_CURRENT = null;    // fixtureId currently shown
+  let GM_TAB = 'team';      // active tab
+
+  // Short label for the loading state (real header comes from the payload)
+  function gameLabel(g) {
+    if (!g) return '';
+    const aw = g.awaySquad, hm = g.homeSquad;
+    if (isComplete(g) || isLive(g)) return `${aw.shortName} ${aw.score ?? 0} – ${hm.score ?? 0} ${hm.shortName}`;
+    return `${aw.shortName} @ ${hm.shortName}`;
+  }
+
+  function modalScoreHtml(root) {
+    const info = root?.matchInfo, sb = root?.scoreboardInfo;
+    const status = sb?.matchStatus === 'PostMatch' ? 'Final' : 'Live';
+    return `<div class="gs-score" style="margin-top:2px">
+      <span class="gs-ab a-clr">${abbrOf(info?.awayTeam)}</span>
+      <span class="gs-num">${sb?.awayScore ?? ''}</span>
+      <span class="gs-dash">–</span>
+      <span class="gs-num">${sb?.homeScore ?? ''}</span>
+      <span class="gs-ab h-clr">${abbrOf(info?.homeTeam)}</span>
+    </div>
+    <div class="gs-sub">${info?.roundName || ''}${info?.roundName ? ' · ' : ''}${status}</div>`;
+  }
+
+  // Player Stats tab — every player, by category (not just the leaders)
+  const defLine = p => {
+    const map = [['DEFENCE_SOLO', 'tkl'], ['DEFENCE_SK', 'sk'], ['DEFENCE_TFL', 'tfl'],
+                 ['DEFENCE_INT', 'INT'], ['DEFENCE_FF', 'FF'], ['DEFENCE_FR', 'FR']];
+    return map.filter(([k]) => num(statVal(p, k))).map(([k, l]) => `${statVal(p, k)} ${l}`).join(' · ') || '—';
+  };
+  const MODAL_CATS = [
+    { key: 'passing',   title: 'Passing',   fn: passLine, sort: 'YARDS',        keep: p => statVal(p, 'YARDS') !== '' },
+    { key: 'rushing',   title: 'Rushing',   fn: rushLine, sort: 'YARDS',        keep: p => num(statVal(p, 'CARRIES')) > 0 },
+    { key: 'receiving', title: 'Receiving', fn: recLine,  sort: 'YARDS',        keep: p => num(statVal(p, 'RECEPTIONS')) > 0 || num(statVal(p, 'TARGETS')) > 0 },
+    { key: 'defence',   title: 'Defence',   fn: defLine,  sort: 'DEFENCE_SOLO', keep: p => ['DEFENCE_SOLO','DEFENCE_SK','DEFENCE_TFL','DEFENCE_INT','DEFENCE_FF','DEFENCE_FR'].some(n => num(statVal(p, n))) },
+  ];
+
+  function catTeamRows(arr, side, abbr, c) {
+    if (!arr) return '';
+    return arr.filter(c.keep)
+      .sort((a, b) => num(statVal(b, c.sort)) - num(statVal(a, c.sort)))
+      .map(p => `<div class="pl-row">
+        <span class="pl-team ${side}-clr">${abbr}</span>
+        <span class="pl-name">${esc(p.name)} <small>#${p.number ?? ''}</small></span>
+        <span class="pl-stat">${c.fn(p)}</span>
+      </div>`).join('');
+  }
+
+  function modalPlayersHtml(ps, awayAbbr, homeAbbr) {
+    let html = '';
+    for (const c of MODAL_CATS) {
+      const a = catTeamRows(ps.awayTeam?.[c.key], 'a', awayAbbr, c);
+      const h = catTeamRows(ps.homeTeam?.[c.key], 'h', homeAbbr, c);
+      if (a || h) html += `<div class="pl-cat">${c.title}</div>${a}${h}`;
+    }
+    return html || '<div class="loading">No player stats available.</div>';
+  }
+
+  // Play-by-Play tab — full game, grouped by quarter (most recent first),
+  // filterable by quarter and by play category (multi-select toggle buttons).
+  const QTR = { '1': '1st Quarter', '2': '2nd Quarter', '3': '3rd Quarter', '4': '4th Quarter' };
+  const QTR_SHORT = { '1': '1st', '2': '2nd', '3': '3rd', '4': '4th' };
+  const PBP_CATS = ['All', 'Scoring', 'Sacks', 'Turnovers'];
+  let GM_PBP_QS = new Set();    // selected quarters; empty = all
+  let GM_PBP_CATS = new Set();  // selected categories; empty = All
+
+  const pbpList = pbp => pbp?.playByPlayInfo?.[''] || [];
+
+  // Opponent abbreviation for the team running the play (for fumble-lost detection)
+  function oppAbbr(teamId, teamMap) {
+    const off = teamMap[teamId];
+    if (!off) return null;
+    for (const t of Object.values(teamMap)) if (t.side !== off.side) return t.abbr;
+    return null;
+  }
+
+  // A "turnover": interception, fumble lost (to the opponent), or turnover on downs.
+  // Deliberately excludes punts and other ordinary changes of possession.
+  function isTurnover(p, teamMap) {
+    const D = (p.description || '').toUpperCase();
+    if (!D) return false;
+    if (D.includes('TURNOVER ON DOWNS')) return true;
+    if (D.includes('INTERCEPTED') && p.subType !== 'Penalty') return true;   // exclude penalty-negated picks
+    if (p.type !== 'Punt' && D.includes('FUMBLE')) {
+      const opp = oppAbbr(p.teamId, teamMap);
+      if (opp && D.includes('RECOVERED BY ' + opp.toUpperCase())) return true;
+    }
+    return false;
+  }
+
+  function matchesCats(p, teamMap) {
+    if (!GM_PBP_CATS.size) return true;   // none selected = All
+    for (const c of GM_PBP_CATS) {
+      if (c === 'Scoring'   && p.isScoring)            return true;
+      if (c === 'Sacks'     && p.type === 'Sack')      return true;
+      if (c === 'Turnovers' && isTurnover(p, teamMap)) return true;
+    }
+    return false;
+  }
+
+  function pbpControlsHtml(list) {
+    const qs = ['1', '2', '3', '4'].filter(q => list.some(p => p.phaseQualifier === q));
+    const qBtns = qs.map(q =>
+      `<button class="pbp-btn${GM_PBP_QS.has(q) ? ' on' : ''}" onclick="togglePbpQuarter('${q}')">${QTR_SHORT[q]}</button>`
+    ).join('');
+    const cBtns = PBP_CATS.map(c => {
+      const on = c === 'All' ? GM_PBP_CATS.size === 0 : GM_PBP_CATS.has(c);
+      return `<button class="pbp-btn${on ? ' on' : ''}" onclick="togglePbpCat('${c}')">${c}</button>`;
+    }).join('');
+    return `<div class="pbp-filters">
+      <div class="pbp-btns" role="group" aria-label="Filter by quarter">${qBtns}</div>
+      <div class="pbp-btns" role="group" aria-label="Filter by play category">${cBtns}</div>
+    </div>`;
+  }
+
+  function pbpListHtml(list, teamMap) {
+    let plays = list;
+    if (GM_PBP_QS.size)  plays = plays.filter(p => GM_PBP_QS.has(p.phaseQualifier));
+    if (GM_PBP_CATS.size) plays = plays.filter(p => matchesCats(p, teamMap));
+    if (!plays.length) return '<div class="loading">No plays match this filter.</div>';
+    let html = '', curQ = null;
+    for (const p of plays) {
+      if (p.phaseQualifier !== curQ) {
+        curQ = p.phaseQualifier;
+        html += `<div class="pbp-q">${QTR[curQ] || 'Overtime'}</div>`;
+      }
+      const tm = teamMap[p.teamId] || { abbr: '', side: 'a' };
+      html += `<div class="pbp-row${p.isScoring ? ' score' : ''}">
+        <span class="pbp-clock">${esc(p.clock)}</span>
+        <span class="pbp-team ${tm.side}-clr">${tm.abbr}</span>
+        <span class="pbp-desc">${esc(p.description)}</span>
+      </div>`;
+    }
+    return html;
+  }
+
+  function modalPbpHtml(pbp, teamMap) {
+    const list = pbpList(pbp);
+    if (!list.length) return '<div class="loading">No play-by-play available.</div>';
+    return pbpControlsHtml(list) + `<div id="pbp-list">${pbpListHtml(list, teamMap)}</div>`;
+  }
+
+  // Re-render the whole play-by-play tab so the buttons reflect the new state
+  function repaintPbp() {
+    const data = GM_DATA;
+    if (!data?.pbp) return;
+    const info = (data.team || data.player || data.pbp)?.matchInfo;
+    document.getElementById('gm-body').innerHTML = modalPbpHtml(data.pbp, teamMapOf(info));
+  }
+  function togglePbpQuarter(q) {
+    GM_PBP_QS.has(q) ? GM_PBP_QS.delete(q) : GM_PBP_QS.add(q);
+    repaintPbp();
+  }
+  function togglePbpCat(c) {
+    if (c === 'All') GM_PBP_CATS.clear();
+    else GM_PBP_CATS.has(c) ? GM_PBP_CATS.delete(c) : GM_PBP_CATS.add(c);
+    repaintPbp();
+  }
+
+  function teamMapOf(info) {
+    const m = {};
+    if (info?.awayTeam) m[info.awayTeam.competitorId] = { abbr: abbrOf(info.awayTeam), side: 'a' };
+    if (info?.homeTeam) m[info.homeTeam.competitorId] = { abbr: abbrOf(info.homeTeam), side: 'h' };
+    return m;
+  }
+
+  function paintModal() {
+    const data = GM_DATA;
+    if (!data) return;
+    const root = data.team || data.player || data.pbp;
+    const info = root?.matchInfo;
+
+    document.getElementById('gm-score').innerHTML = root ? modalScoreHtml(root) : '';
+    document.getElementById('gm-tabs').innerHTML =
+      [['team', 'Team Stats'], ['player', 'Player Stats'], ['pbp', 'Play-by-Play']]
+        .map(([k, l]) => `<button class="gm-tab${GM_TAB === k ? ' active' : ''}" onclick="switchGameTab('${k}')">${l}</button>`)
+        .join('');
+
+    let body;
+    if (GM_TAB === 'team') {
+      body = data.team?.teamStats ? teamStatsHtml(data.team.teamStats) : '<div class="loading">Team stats not available.</div>';
+    } else if (GM_TAB === 'player') {
+      body = data.player?.playerStats
+        ? modalPlayersHtml(data.player.playerStats, abbrOf(info?.awayTeam), abbrOf(info?.homeTeam))
+        : '<div class="loading">Player stats not available.</div>';
+    } else {
+      body = data.pbp ? modalPbpHtml(data.pbp, teamMapOf(info)) : '<div class="loading">Play-by-play not available.</div>';
+    }
+    const bodyEl = document.getElementById('gm-body');
+    bodyEl.innerHTML = body;
+    bodyEl.scrollTop = 0;
+  }
+
+  function switchGameTab(tab) { GM_TAB = tab; paintModal(); }
+
+  async function openGameModal(fixtureId) {
+    fixtureId = String(fixtureId);
+    GM_CURRENT = fixtureId;
+    GM_TAB = 'team';
+    GM_PBP_QS = new Set();
+    GM_PBP_CATS = new Set();
+    document.getElementById('gm-bd').classList.add('open');
+    document.getElementById('gm-sh').classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    const g = GAMES_BY_ID[fixtureId];
+    document.getElementById('gm-score').innerHTML = g ? `<div class="gs-sub" style="margin-top:6px">${esc(gameLabel(g))}</div>` : '';
+    document.getElementById('gm-tabs').innerHTML = '';
+    document.getElementById('gm-body').innerHTML = '<div class="loading">Loading game…</div>';
+
+    // Live games always refetch (stats change); completed games are cached.
+    const live = g && isLive(g);
+    let data = live ? null : GM_CACHE[fixtureId];
+    if (!data) {
+      const [team, player, pbp] = await Promise.all([
+        gtFetch(fixtureId, 'teamStats'),
+        gtFetch(fixtureId, 'playerStats'),
+        gtFetch(fixtureId, 'playByPlay'),
+      ]);
+      data = { team, player, pbp };
+      if (!live) GM_CACHE[fixtureId] = data;
+    }
+    if (GM_CURRENT !== fixtureId) return;   // user closed or opened another while loading
+    GM_DATA = data;
+
+    if (!data.team && !data.player && !data.pbp) {
+      document.getElementById('gm-body').innerHTML = '<div class="err">Stats aren’t available for this game yet.</div>';
+      return;
+    }
+    paintModal();
+  }
+
+  function closeGameModal() {
+    GM_CURRENT = null;
+    GM_DATA = null;
+    document.getElementById('gm-bd').classList.remove('open');
+    document.getElementById('gm-sh').classList.remove('open');
+    document.body.style.overflow = '';
   }
 
   // ── Main load ─────────────────────────────────────────────────────────────
@@ -772,6 +1068,7 @@
       SQUADS = Object.fromEntries(squads.filter(s => s.id !== 0).map(s => [s.id, s]));
 
       const games = allGames(rounds);
+      GAMES_BY_ID = Object.fromEntries(games.filter(g => g.id != null).map(g => [String(g.id), g]));
 
       gameEl.innerHTML = renderFeatured(featuredElksGame(games));
       document.getElementById('standings-section').innerHTML = renderStandings();
