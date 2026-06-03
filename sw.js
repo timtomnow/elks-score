@@ -8,7 +8,7 @@
 //
 // Bump CACHE_VERSION whenever the shell files below change, so old caches are
 // dropped on the next visit.
-const CACHE_VERSION = 'elks-score-v3';
+const CACHE_VERSION = 'elks-score-v4';
 const SHELL = [
   './',
   './index.html',
@@ -20,6 +20,7 @@ const SHELL = [
   './docs/help/index.json',
   './docs/help/getting-around.md',
   './docs/help/install-app.md',
+  './docs/help/change-team.md',
   './docs/help/follow-live-game.md',
   './docs/help/recent-and-upcoming.md',
   './docs/help/open-box-score.md',

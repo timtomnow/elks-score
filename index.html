@@ -235,6 +235,12 @@
     .set-link.accent { color:var(--green); }
     .set-copy { margin-top:14px; padding-top:12px; border-top:1px solid #f0f0f0; font-size:12px; color:#aaa; }
 
+    /* Team picker */
+    .team-row { display:flex; align-items:center; gap:12px; }
+    .team-logo { width:40px; height:40px; object-fit:contain; flex-shrink:0; }
+    .team-select { flex:1; width:100%; padding:11px 36px 11px 12px; font-size:14px; font-weight:600; color:#1c1c1e; background-color:#fff; border:1px solid #d8d8de; border-radius:10px; cursor:pointer; -webkit-appearance:none; appearance:none; background-repeat:no-repeat; background-position:right 12px center; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>"); }
+    .team-select:focus { outline:none; border-color:var(--green); }
+
     /* Help index */
     .help-card-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
     .help-viewall { font-size:12px; font-weight:700; color:var(--green); text-decoration:none; }
@@ -349,12 +355,60 @@
 
 <script>
   // ── Constants ───────────────────────────────────────────────────────────────
-  const ELKS_ID = CONFIG.TEAM_ID;                          // Edmonton Elks (Genius Sports squad id)
-  const BASE    = CONFIG.CFL_API_BASE + '/json/scoreboard'; // via Cloudflare Worker CORS proxy
+  const BASE = CONFIG.CFL_API_BASE + '/json/scoreboard'; // via Cloudflare Worker CORS proxy
 
   // CFL divisions (squad id → division)
   const WEST = new Set([93775, 112939, 114347, 106752, 110380]); // BC, CGY, EDM, SSK, WPG
   const EAST = new Set([83579, 86680, 88019, 122345]);           // HAM, MTL, OTT, TOR
+
+  // Every CFL team, keyed by Genius Sports squad id. `primary`/`accent` drive the
+  // app's theme (CSS vars --green / --gold); logos come from the scoreboard CDN.
+  // The user picks which team the whole app follows (Settings → Team); the choice
+  // is saved per-device. `nick` is the short name used in section headings.
+  const TEAMS = {
+    114347: { name: 'Edmonton Elks',            nick: 'Elks',         abbr: 'EDM', primary: '#14452F', primary2: '#1B5E3F', accent: '#F2A900' },
+    93775:  { name: 'BC Lions',                 nick: 'Lions',        abbr: 'BC',  primary: '#262220', primary2: '#3D3733', accent: '#F15A22' },
+    112939: { name: 'Calgary Stampeders',       nick: 'Stampeders',   abbr: 'CGY', primary: '#1A1A1A', primary2: '#333333', accent: '#C8102E' },
+    106752: { name: 'Saskatchewan Roughriders', nick: 'Roughriders',  abbr: 'SSK', primary: '#006341', primary2: '#00794F', accent: '#C5B358' },
+    110380: { name: 'Winnipeg Blue Bombers',    nick: 'Blue Bombers', abbr: 'WPG', primary: '#041E42', primary2: '#0A2E63', accent: '#FFB81C' },
+    83579:  { name: 'Hamilton Tiger-Cats',      nick: 'Tiger-Cats',   abbr: 'HAM', primary: '#1A1A1A', primary2: '#333333', accent: '#FFB81C' },
+    86680:  { name: 'Montreal Alouettes',       nick: 'Alouettes',    abbr: 'MTL', primary: '#0B1F3A', primary2: '#13315C', accent: '#E4002B' },
+    88019:  { name: 'Ottawa Redblacks',         nick: 'Redblacks',    abbr: 'OTT', primary: '#1A1A1A', primary2: '#333333', accent: '#A6192E' },
+    122345: { name: 'Toronto Argonauts',        nick: 'Argonauts',    abbr: 'TOR', primary: '#002B5C', primary2: '#003D80', accent: '#5DADEC' },
+  };
+  const teamLogo = id => `https://cflscoreboard.cfl.ca/media/squads/${id}.png`;
+
+  // Active team (the one the app follows). `ELKS_ID` keeps its historical name so
+  // the rest of the code reads naturally; it's now whichever team the user chose.
+  const TEAM_KEY = 'elks-score:team';
+  function storedTeamId() {
+    const v = parseInt(localStorage.getItem(TEAM_KEY), 10);
+    return TEAMS[v] ? v : CONFIG.TEAM_ID;
+  }
+  let ELKS_ID = storedTeamId();
+  let TEAM    = TEAMS[ELKS_ID];
+
+  // Repaint the app for `id`: theme colors, header logo/title, and (via load())
+  // every team-specific section. Persists the choice unless told otherwise.
+  function applyTeam(id, persist = true) {
+    if (!TEAMS[id]) return;
+    ELKS_ID = id;
+    TEAM = TEAMS[id];
+    if (persist) localStorage.setItem(TEAM_KEY, String(id));
+    const root = document.documentElement.style;
+    root.setProperty('--green',  TEAM.primary);
+    root.setProperty('--green2', TEAM.primary2);
+    root.setProperty('--gold',   TEAM.accent);
+    const logo = document.querySelector('.logo-img');
+    if (logo) { logo.src = teamLogo(id); logo.alt = TEAM.name; }
+    const h1 = document.querySelector('.header h1');
+    if (h1) h1.textContent = TEAM.name;
+  }
+
+  function onTeamChange(val) {
+    applyTeam(parseInt(val, 10));
+    load();   // re-render every section for the newly selected team
+  }
 
   // Game statuses that mean the game is in progress
   const LIVE_STATUSES = new Set([
@@ -504,7 +558,7 @@
     if (!g) {
       return `<div class="card"><div class="sec">
         <span class="badge b-off">Off Season</span>
-        <div class="off-msg">No Elks games scheduled right now.</div>
+        <div class="off-msg">No ${TEAM.nick} games scheduled right now.</div>
       </div></div>`;
     }
 
@@ -665,7 +719,7 @@
       </div>`;
     }).join('');
     return `<div class="card"><div class="sec">
-      <div class="sec-title">Upcoming Elks Games</div>
+      <div class="sec-title">Upcoming ${TEAM.nick} Games</div>
       ${rows}
     </div></div>`;
   }
@@ -701,7 +755,7 @@
       </div>`;
     }).join('');
     return `<div class="card"><div class="sec">
-      <div class="sec-title">Recent Elks Results</div>
+      <div class="sec-title">Recent ${TEAM.nick} Results</div>
       ${rows}
     </div></div>`;
   }
@@ -1310,6 +1364,21 @@
   }
 
   // ── Help: the index card (lives on the Settings home, beside About) ─────────
+  function teamCardHtml() {
+    const opts = Object.entries(TEAMS)
+      .sort((a, b) => a[1].name.localeCompare(b[1].name))
+      .map(([id, t]) => `<option value="${id}"${+id === ELKS_ID ? ' selected' : ''}>${esc(t.name)}</option>`)
+      .join('');
+    return `<div class="set-card">
+      <div class="set-card-title">Team</div>
+      <div class="set-desc" style="margin-bottom:12px">Choose which CFL team this app follows. Your pick is saved on this device.</div>
+      <div class="team-row">
+        <img class="team-logo" src="${teamLogo(ELKS_ID)}" alt="" onerror="this.style.visibility='hidden'">
+        <select class="team-select" aria-label="Select team" onchange="onTeamChange(this.value)">${opts}</select>
+      </div>
+    </div>`;
+  }
+
   function helpCardHtml(guides) {
     if (!guides.length) {
       return `<div class="set-card"><div class="set-card-title">Help guide</div>
@@ -1338,9 +1407,9 @@
   // 1. Index — About card + the help index.
   async function renderSettingsHome() {
     setHelpHead('Settings', false);
-    setBody().innerHTML = aboutCardHtml() + `<div class="set-card"><div class="set-card-title">Help guide</div><div class="loading">Loading…</div></div>`;
+    setBody().innerHTML = aboutCardHtml() + teamCardHtml() + `<div class="set-card"><div class="set-card-title">Help guide</div><div class="loading">Loading…</div></div>`;
     const guides = await loadGuides();
-    setBody().innerHTML = aboutCardHtml() + helpCardHtml(guides);
+    setBody().innerHTML = aboutCardHtml() + teamCardHtml() + helpCardHtml(guides);
     setBody().scrollTop = 0;
   }
 
@@ -1442,6 +1511,7 @@
   }
   scheduleRefresh();
 
+  applyTeam(ELKS_ID, false);   // sync theme/logo/title with the saved team before first render
   load();
 </script>
 <script>
