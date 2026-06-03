@@ -1192,7 +1192,7 @@
         } catch { return null; }
       }));
       // Known categories lead in this order; anything else falls back to alphabetical.
-      const CAT_RANK = ['Getting started', 'Game stats'];
+      const CAT_RANK = ['Getting started', 'Following the Elks', 'Game stats', 'Around the league'];
       const rank = c => { const i = CAT_RANK.indexOf(c); return i === -1 ? CAT_RANK.length : i; };
       _guides = guides.filter(Boolean).sort((a, b) =>
         rank(a.category) - rank(b.category) ||

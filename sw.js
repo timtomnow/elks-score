@@ -8,7 +8,7 @@
 //
 // Bump CACHE_VERSION whenever the shell files below change, so old caches are
 // dropped on the next visit.
-const CACHE_VERSION = 'elks-score-v2';
+const CACHE_VERSION = 'elks-score-v3';
 const SHELL = [
   './',
   './index.html',
@@ -20,8 +20,13 @@ const SHELL = [
   './docs/help/index.json',
   './docs/help/getting-around.md',
   './docs/help/install-app.md',
+  './docs/help/follow-live-game.md',
+  './docs/help/recent-and-upcoming.md',
   './docs/help/open-box-score.md',
   './docs/help/filter-play-by-play.md',
+  './docs/help/official-cfl-stats.md',
+  './docs/help/read-standings.md',
+  './docs/help/weekly-scoreboard.md',
 ];
 
 self.addEventListener('install', (event) => {

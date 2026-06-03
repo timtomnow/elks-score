@@ -1,6 +1,11 @@
 [
   "getting-around",
   "install-app",
+  "follow-live-game",
+  "recent-and-upcoming",
   "open-box-score",
-  "filter-play-by-play"
+  "filter-play-by-play",
+  "official-cfl-stats",
+  "read-standings",
+  "weekly-scoreboard"
 ]
