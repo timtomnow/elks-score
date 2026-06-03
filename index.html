@@ -164,6 +164,10 @@
     .pl-name { font-size: 12px; font-weight: 600; color: #1c1c1e; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .pl-name small { color: #c0c0c0; font-weight: 600; }
     .pl-stat { font-size: 11px; color: #888; flex-shrink: 0; text-align: right; }
+    /* Player Stats — one team at a time, toggled by the headers */
+    .pl-teams { display: flex; gap: 6px; position: sticky; top: 0; background: #fff; z-index: 5; padding-bottom: 8px; }
+    .pl-team-btn { flex: 1; padding: 8px 4px; font-size: 13px; font-weight: 800; letter-spacing: .5px; color: #888; background: #f4f4f6; border: 1px solid #ececec; border-radius: 9px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .pl-team-btn.on { background: var(--green); color: #fff; border-color: var(--green); }
 
     /* Clickable Game Stats card → opens the full box-score modal */
     .gs-card { cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -965,26 +969,33 @@
     { key: 'defence',   title: 'Defence',   fn: defLine,  sort: 'DEFENCE_SOLO', keep: p => ['DEFENCE_SOLO','DEFENCE_SK','DEFENCE_TFL','DEFENCE_INT','DEFENCE_FF','DEFENCE_FR'].some(n => num(statVal(p, n))) },
   ];
 
-  function catTeamRows(arr, side, abbr, c) {
+  function catColRows(arr, c) {
     if (!arr) return '';
     return arr.filter(c.keep)
       .sort((a, b) => num(statVal(b, c.sort)) - num(statVal(a, c.sort)))
       .map(p => `<div class="pl-row">
-        <span class="pl-team ${side}-clr">${abbr}</span>
         <span class="pl-name">${esc(p.name)} <small>#${p.number ?? ''}</small></span>
         <span class="pl-stat">${c.fn(p)}</span>
       </div>`).join('');
   }
 
+  let GM_PLAYER_SIDE = 'a';   // which team is shown in the Player Stats tab: 'a' away, 'h' home
+
   function modalPlayersHtml(ps, awayAbbr, homeAbbr) {
-    let html = '';
+    const teamPs = GM_PLAYER_SIDE === 'h' ? ps.homeTeam : ps.awayTeam;
+    const toggle = `<div class="pl-teams">
+      <button class="pl-team-btn${GM_PLAYER_SIDE === 'a' ? ' on' : ''}" onclick="switchPlayerSide('a')">${awayAbbr}</button>
+      <button class="pl-team-btn${GM_PLAYER_SIDE === 'h' ? ' on' : ''}" onclick="switchPlayerSide('h')">${homeAbbr}</button>
+    </div>`;
+    let body = '';
     for (const c of MODAL_CATS) {
-      const a = catTeamRows(ps.awayTeam?.[c.key], 'a', awayAbbr, c);
-      const h = catTeamRows(ps.homeTeam?.[c.key], 'h', homeAbbr, c);
-      if (a || h) html += `<div class="pl-cat">${c.title}</div>${a}${h}`;
+      const rows = catColRows(teamPs?.[c.key], c);
+      if (rows) body += `<div class="pl-cat">${c.title}</div>${rows}`;
     }
-    return html || '<div class="loading">No player stats available.</div>';
+    return toggle + (body || '<div class="loading">No player stats available.</div>');
   }
+
+  function switchPlayerSide(side) { GM_PLAYER_SIDE = side; paintModal(); }
 
   // Play-by-Play tab — full game, grouped by quarter (most recent first),
   // filterable by quarter and by play category (multi-select toggle buttons).
@@ -1127,6 +1138,7 @@
     fixtureId = String(fixtureId);
     GM_CURRENT = fixtureId;
     GM_TAB = 'team';
+    GM_PLAYER_SIDE = 'a';
     GM_PBP_QS = new Set();
     GM_PBP_CATS = new Set();
     document.getElementById('gm-bd').classList.add('open');
